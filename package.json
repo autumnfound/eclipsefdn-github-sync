@@ -1,0 +1,20 @@
+{
+  "name": "eclipsefdn-github-sync",
+  "version": "1.0.0",
+  "description": "Running the toolset",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eclipsefdn/eclipsefdn-github-sync.git"
+  },
+  "author": "",
+  "license": "EPL-2.0",
+  "bugs": {
+    "url": "https://github.com/eclipsefdn/eclipsefdn-github-sync/issues"
+  },
+  "homepage": "https://github.com/eclipsefdn/eclipsefdn-github-sync#readme",
+  "dependencies": {
+    "@octokit/rest": "^16.28.7",
+    "yargs": "^13.3.0"
+  }
+}
