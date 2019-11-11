@@ -73,6 +73,25 @@ module.exports = function(token) {
     return callCount;
   };
 
+  this.checkAccess = async function() {
+    if (token == undefined || token == "") {
+      winston.error("Application was not given an access token and will not continue");
+      return;
+    }
+    try {
+      const { headers } = await octokit.request('HEAD /');
+      const scopes = headers['x-oauth-scopes'].split(', ');
+      if (scopes.indexOf("admin:org") < 0) {
+        winston.error("Application was not given an access token with the admin:org scope and will not continue");
+      } else {
+        return true;
+      }
+    } catch(err) {
+      winston.error("Application was not given a valid access token");
+    }
+    return false;
+  }
+
 	this.addTeam = function(org, team) {
     if (!org || !team) {
       winston.error('addTeam command requires organization and team to be set');
