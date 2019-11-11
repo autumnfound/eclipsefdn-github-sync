@@ -76,10 +76,10 @@ _prepareSecret();
 function _prepareSecret() {
   //retrieve the secret API token
   fs.readFile('/run/secrets/api-token', {encoding: 'utf-8'}, function(err,data){
-     if (!err && data != undefined && data.length > 0) {
+     if (!err && data != undefined) {
          _init(data.trim());
      } else {
-         winston.error(err);
+         winston.error("Error while reading access token: " + err);
          return;
      }
   });
@@ -90,12 +90,15 @@ function _prepareSecret() {
  * starts.
  */
 async function _init(secret) {
-  if (secret === undefined) {
+  if (secret == undefined || secret == "") {
     winston.error("Could not fetch API secret, exiting");
     return;
   }
   
   wrap = new Wrapper(secret);
+  if (!await wrap.checkAccess()) {
+    return;
+  }
   wrap.setDryRun(argv.d);
 
   cHttp = new CachedHttp();

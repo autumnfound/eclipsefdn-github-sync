@@ -78,7 +78,7 @@ function _prepareSecret() {
      if (!err && data != undefined && data.length > 0) {
          run(argv, data.trim());
      } else {
-         winston.error(err);
+         winston.error("Error while reading access token: " + err);
          return;
      }
   });
@@ -92,6 +92,9 @@ function run(argv, secret) {
   }
   
   var wrap = new wrapper(secret);
+  if (!await wrap.checkAccess()) {
+    return;
+  }
   wrap.setDryRun(argv.dryrun);
   
   // if add_team is set
