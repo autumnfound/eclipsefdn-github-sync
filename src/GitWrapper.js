@@ -309,7 +309,7 @@ module.exports = function(token) {
    * Prefetch and fill caches with all existing teams for the current org. Will
    * check if prefetch has already been performed for current org.
    */
-  this.prefetchTeams =async function(org) {
+  this.prefetchTeams = async function(org) {
     if (prefetch['teams'][org] == true) {
       return;
     }
@@ -369,6 +369,36 @@ module.exports = function(token) {
     // set the prefetch flag for org to true
     prefetch['repos'][org] = true;
     winston.info(`Finished prefetch for org=${org}, got ${count} repos`);
+  }
+  
+  /**
+   * Gets all teams for a given organization
+   */
+  this.getTeamsForOrg = async function(org) {
+    await this.prefetchTeams(org);
+    var out = [];
+    for (var repo in teamCache.all()) {
+      out.push(JSON.parse(JSON.stringify(teamCache.getKey(repo))));
+    }
+    return out;
+  }
+
+  /**
+   * Wraps GitHub repo team functionality in paginate to reduce calls for
+   * potential large repos. Returns raw results with no cache
+   */
+  this.getReposForTeam = async function(team) {
+    winston.debug(`Getting repos associated with team: ${team.name}`);
+    var options = octokit.teams.listRepos.endpoint.merge({
+      'team_id': team.id
+    });
+    return await octokit.paginate(options)
+      .then(result => result)
+      .catch(err => logError(err, 'repos:listRepos'));
+  }
+
+  this.sanitizeTeamName = function(name) {
+    return name.toLowerCase().replace(/[^\s\da-zA-Z-]/g, '-');
   }
 }
 /** END OF EXPORTS */
