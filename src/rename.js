@@ -83,7 +83,6 @@ async function run(secret) {
   
   // get suggested repo to team name map
   var projectDataRaw = await eclipseAPI();
-  //var projectDataRaw = d;
   var map = mapRepoToIDs(projectDataRaw);
   var projectedOut = {};
   
@@ -107,12 +106,20 @@ async function run(secret) {
       // get the projected team name for the repo
       tgt = map[repo];
       if (tgt != null) {
-        projectedOut[team.name] = tgt;
         // only action if dry run is false
         if (!argv.d) {
-          wrap.renameTeam(argv.o, team.name, tgt);
+          try{
+            var tmp = await wrap.renameTeam(argv.o, team.name, tgt);
+            Atomics.wait(int32, 0, 0, waitTimeInMS);
+            tmp = await wrap.editTeam(team.id, tgt, {"privacy": "secret"});
+            // add projected team once done.
+            projectedOut[team.name] = tgt;
+          } catch (e) {
+            console.log(`Error while updating ${team.name}. \n${e}`);
+          }
         } else {
           console.log(`Dry run enabled, not renaming ${team.name} to ${tgt}`);
+          projectedOut[team.name] = tgt;
         }
         Atomics.wait(int32, 0, 0, waitTimeInMS);
         break;
