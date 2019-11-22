@@ -305,6 +305,21 @@ module.exports = function(token) {
     return getTeamMembers(org, team, teamId);
   };
   
+  this.editTeam = async function(teamId, teamName, options) {
+    winston.debug(`Updating team ${teamId} settings: ${JSON.stringify(options)}`);
+    // allow for other options being set
+    var opt = options;
+    if (opt == null) {
+      opt = {};
+    }
+    // set the required team options
+    opt["team_id"] = teamId;
+    opt["name"] = teamName;
+    return await octokit.teams.update(opt)
+      .then(result => result)
+      .catch(err => logError(err, 'team:list'));
+  };
+  
   /**
    * Prefetch and fill caches with all existing teams for the current org. Will
    * check if prefetch has already been performed for current org.

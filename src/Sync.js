@@ -215,11 +215,15 @@ async function runSync(data) {
       
       if (!argv.d) {
         // create the repo if it doesn't exist
-        await wrap.addRepo(org, repo);
-        
-        // Ensure that the teams refer to the repo
-        await wrap.addRepoToTeam(org, `${projectID}-committers`, repo, "push");
-        await wrap.addRepoToTeam(org, `${projectID}-contributors`, repo);
+        try {
+          await wrap.addRepo(org, repo);
+          
+          // Ensure that the teams refer to the repo
+          await wrap.addRepoToTeam(org, `${projectID}-committers`, repo, "push");
+          await wrap.addRepoToTeam(org, `${projectID}-contributors`, repo);
+        } catch (e) {
+          winston.error(`Error while updating ${projectID}. \n${e}`);
+        }
       } else {
         winston.warn(`Dry run set, not adding repo '${repo}' for org: ${org}`);
       }
@@ -248,6 +252,8 @@ async function updateTeam(org, project, grouping) {
   var projectID = project.project_project_id;
   var teamName = `${projectID}-${grouping}`;
   var team = await wrap.addTeam(org, teamName);
+  // set team to private
+  var result = await wrap.editTeam(team.id, teamName, {"privacy": "secret"});
   var members = await wrap.getTeamMembers(org, teamName, team.id);
   
   winston.debug(grouping + ' members: ');
