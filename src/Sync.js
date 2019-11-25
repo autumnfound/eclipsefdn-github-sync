@@ -235,9 +235,11 @@ async function updateTeam(org, project, grouping) {
 
   winston.debug('Leftover members: ');
   winston.debug(members);
+  // Commented out until Eclipse API endpoint exists to get user for github handle
+  /*
   if (members != undefined) {
     for (var i = 0; i < members.length; i++) {
-      await wrap.removeUserFromTeam(org, teamName, members[i].login);
+      //await wrap.removeUserFromTeam(org, teamName, members[i].login);
     }
-  }
+  }*/
 }
