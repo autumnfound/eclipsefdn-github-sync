@@ -102,7 +102,7 @@ async function _init(secret) {
   wrap.setDryRun(argv.d);
 
   cHttp = new CachedHttp();
-  /*
+  
   var hasMore = true;
   var result = [];
   var data = [];
@@ -128,57 +128,11 @@ async function _init(secret) {
         data.push(result[i]);
       }
     }
-  }*/
-  
-  var d = [{
-      "project_project_id":"test.electric-boogaloo-4",
-      "project_name":"Electric Boogaloo 3: The boogie strikes back",
-      "project_scope":"",
-      "project_url":"https://projects.eclipse.org/projects/test.electric-boogaloo",
-      "github_repos":[
-        "https://github.com/eclipsefdn-webdev/test-electric-boogaloo",
-        "https://github.com/eclipsefdn-webdev/test-riding-lawnmower"
-      ],
-      "contributors":[
-        {
-           "url":"https://api.eclipse.org/account/profile/cguindon"
-        },
-        {
-          "url":"https://api.eclipse.org/account/profile/malowe"
-        },
-      ],
-      "committers":[
-         {
-            "url":"https://api.eclipse.org/account/profile/cguindon"
-         }
-      ],
-      "spec_project_working_group":null
-   },
-   {
-     "project_project_id":"dork.bork-bork",
-     "project_name":"Electric Boogaloo 3: The boogie strikes back",
-     "project_scope":"",
-     "project_url":"https://projects.eclipse.org/projects/dork.bork-bork",
-     "github_repos":[
-       "https://github.com/eclipsefdn-webdev/dork-beagle",
-       "https://github.com/eclipsefdn-webdev/dork-poodle"
-     ],
-     "contributors":[
-       {
-          "url":"https://api.eclipse.org/account/profile/cguindon"
-       },
-     ],
-     "committers":[
-        {
-           "url":"https://api.eclipse.org/account/profile/epoirier"
-        }
-     ],
-     "spec_project_working_group":null
-  }];
+  }
   
   winston.info(`Finished preloading ${d.length} projects`);
   // start the sync operation.
-  await runSync(d);
+  await runSync(data);
   
   // close the wrappers, persisting required cache info
   cHttp.close();
