@@ -153,6 +153,9 @@ async function runSync(data) {
     for (idx in repos) {
       var repoUrl = repos[idx];
       var match = /\/([^\/]*)\/([^\/]*)$/.exec(repoUrl);
+      if (match == undefined) {
+        continue;
+      }
       
       // get the org + repo from the repo URL
       var org = match[1];
