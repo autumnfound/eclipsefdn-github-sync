@@ -144,7 +144,7 @@ async function runSync(data) {
   var start = new Date();
   for (key in data) {
     var project = data[key];
-    var projectID = project.project_project_id;
+    var projectID = project.project_id;
     var repos = project.github_repos;
     winston.debug(`Project ID: ${projectID}`);
     
@@ -203,7 +203,7 @@ async function processOrg(org, project) {
 }
 
 async function updateTeam(org, project, grouping) {
-  var projectID = project.project_project_id;
+  var projectID = project.project_id;
   var teamName = `${projectID}-${grouping}`;
   var team = await wrap.addTeam(org, teamName);
   // set team to private
