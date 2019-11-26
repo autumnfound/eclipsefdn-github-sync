@@ -130,7 +130,7 @@ async function _init(secret) {
     }
   }
   
-  winston.info(`Finished preloading ${d.length} projects`);
+  winston.info(`Finished preloading ${data.length} projects`);
   // start the sync operation.
   await runSync(data);
   
