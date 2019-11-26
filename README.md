@@ -1,4 +1,4 @@
-# EclipseFdn GitHub Sync toolset
+# eclipsefdn-github-sync
 
 ## Running the toolset for development
 
