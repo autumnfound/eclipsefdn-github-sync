@@ -151,7 +151,7 @@ async function runSync(data) {
     // maintain orgs used by this project
     var orgs = [];
     for (idx in repos) {
-      var repoUrl = repos[idx];
+      var repoUrl = repos[idx].url;
       var match = /\/([^\/]*)\/([^\/]*)$/.exec(repoUrl);
       if (match == undefined) {
         continue;
