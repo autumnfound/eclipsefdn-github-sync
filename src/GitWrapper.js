@@ -18,7 +18,6 @@ const Octokit = require('@octokit/rest')
     require('@octokit/plugin-throttling')
   ]);
 const flatCache = require('flat-cache');
-const winston = require('winston');
 
 // variables for use with the cache
 const teamCacheID = '1';
@@ -48,7 +47,7 @@ module.exports = function(token) {
     auth: token,
     throttle: {
       onRateLimit: (retryAfter, options) => {
-        winston.warn(`Request quota exhausted for request ${options.method} ${options.url}`);
+        console.log(`Request quota exhausted for request ${options.method} ${options.url}`);
 
         if (options.request.retryCount === 0) { // only retries once
           console.log(`Retrying after ${retryAfter} seconds!`);
@@ -57,7 +56,7 @@ module.exports = function(token) {
       },
       onAbuseLimit: (retryAfter, options) => {
         // does not retry, only logs a warning
-        winston.warn(`Abuse detected for request ${options.method} ${options.url}`);
+        console.log(`Abuse detected for request ${options.method} ${options.url}`);
       }
     }
   });
@@ -75,33 +74,33 @@ module.exports = function(token) {
 
   this.checkAccess = async function() {
     if (token == undefined || token == "") {
-      winston.error("Application was not given an access token and will not continue");
+      console.log("Application was not given an access token and will not continue");
       return;
     }
     try {
       const { headers } = await octokit.request('HEAD /');
       const scopes = headers['x-oauth-scopes'].split(', ');
       if (scopes.indexOf("admin:org") < 0) {
-        winston.error("Application was not given an access token with the admin:org scope and will not continue");
+        console.log("Application was not given an access token with the admin:org scope and will not continue");
       } else {
         return true;
       }
     } catch(err) {
-      winston.error("Application was not given a valid access token");
+      console.log("Application was not given a valid access token");
     }
     return false;
   }
 
 	this.addTeam = function(org, team) {
     if (!org || !team) {
-      winston.error('addTeam command requires organization and team to be set');
+      console.log('addTeam command requires organization and team to be set');
       return;
     }
     var sanitizedTeam = sanitizeTeamName(team);
     // check if the team already exists
     var cachedResult = teamCache.getKey(getTeamCacheKey(org, sanitizedTeam));
     if (cachedResult != null) {
-      winston.debug(`Team with name ${team} already exists for ${org}, skipping creation`);
+      console.log(`Team with name ${team} already exists for ${org}, skipping creation`);
       return cachedResult;
     }
     
@@ -116,11 +115,11 @@ module.exports = function(token) {
 	      // cache the result for later use
 	      teamCache.setKey(getTeamCacheKey(org, sanitizedTeam), result.data);
 	      
-	      winston.debug(`Done creating team with name: ${org}:${sanitizedTeam}`);
+	      console.log(`Done creating team with name: ${org}:${sanitizedTeam}`);
 	      return result.data;
 	    }).catch(err => logError(err, 'team:create'));
 	  } else {
-	    winston.debug(`Dry run set, not writing new team ${org}:${sanitizedTeam}`);
+	    console.log(`Dry run set, not writing new team ${org}:${sanitizedTeam}`);
 	  }
 	};
 	
@@ -131,7 +130,7 @@ module.exports = function(token) {
    */
 	this.addRepoToTeam = async function(org, team, repo, permissions = "pull") {  
     if (!org || !team || !repo) {
-      winston.error('addRepoToTeam command requires organization, team, and repo to be set');
+      console.log('addRepoToTeam command requires organization, team, and repo to be set');
       return;
     }
     var sanitizedTeam = sanitizeTeamName(team);
@@ -152,10 +151,10 @@ module.exports = function(token) {
 			  'repo': repo,
 			  'permission': permissions
 			}).then(result => {
-			  winston.debug(`Done adding repo to team: ${repo} -> ${org}/${sanitizedTeam}`)
+			  console.log(`Done adding repo to team: ${repo} -> ${org}/${sanitizedTeam}`)
 			}).catch(err => logError(err, 'team:addOrUpdateRepo'));
 	  } else {
-	    winston.debug(`Dry run set, not writing new team ${org}/${name}`);	  
+	    console.log(`Dry run set, not writing new team ${org}/${name}`);	  
 	  }
 	};
   
@@ -165,7 +164,7 @@ module.exports = function(token) {
    */
   this.inviteUserToTeam = async function(org, team, uname) {  
     if (!org || !team || !uname) {
-      winston.error('inviteUserToTeam command requires organization, team, and uname to be set');
+      console.log('inviteUserToTeam command requires organization, team, and uname to be set');
       return;
     }
     var sanitizedTeam = sanitizeTeamName(team);
@@ -181,7 +180,7 @@ module.exports = function(token) {
     var teamMembers = await getTeamMembers(org, sanitizedTeam, teamData.id);
     for (var i = 0; i < teamMembers.length; i++) {
       if (teamMembers[i].login == uname) {
-        winston.debug(`User with usernmae '${uname}' is already a member of ${org}/${sanitizedTeam}`);
+        console.log(`User with usernmae '${uname}' is already a member of ${org}/${sanitizedTeam}`);
         return;
       }
     }
@@ -193,7 +192,7 @@ module.exports = function(token) {
         'team_id': teamData.id,
         'username': uname
       }).then(result => {
-        winston.debug(`Done inviting user to team: ${uname} -> ${org}/${sanitizedTeam}`)
+        console.log(`Done inviting user to team: ${uname} -> ${org}/${sanitizedTeam}`)
       }).catch(err => logError(err, 'team:addOrUpdateMembership'));
     }
   };
@@ -204,7 +203,7 @@ module.exports = function(token) {
    */
   this.removeUserFromTeam = async function(org, team, uname) {  
     if (!org || !team || !uname) {
-      winston.error('removeUserFromTeam command requires organization, team, and uname to be set');
+      console.log('removeUserFromTeam command requires organization, team, and uname to be set');
       return;
     }
     var sanitizedTeam = sanitizeTeamName(team);
@@ -226,7 +225,7 @@ module.exports = function(token) {
       }
     }
     if (!isMember) {
-      winston.warn(`User with usernmae '${uname}' is not a member of ${org}/${team}, cannot remove`);
+      console.log(`User with usernmae '${uname}' is not a member of ${org}/${team}, cannot remove`);
       return;
     }
 
@@ -237,7 +236,7 @@ module.exports = function(token) {
         'team_id': teamData.id,
         'username': uname
       }).then(result => {
-        winston.debug(`Done removing user from team: ${uname} -> ${org}/${sanitizedTeam}`)
+        console.log(`Done removing user from team: ${uname} -> ${org}/${sanitizedTeam}`)
       }).catch(err => logError(err, 'team:removeMembership'));
     }
   };
@@ -247,7 +246,7 @@ module.exports = function(token) {
    */
   this.renameTeam = async function(org, team, newName) {
     if (!org || !team || !newName) {
-      winston.debug('renameTeam command requires organization, team, and new team name to be set');
+      console.log('renameTeam command requires organization, team, and new team name to be set');
       return;
     }
     var sanitizedTeam = sanitizeTeamName(team);
@@ -266,7 +265,7 @@ module.exports = function(token) {
         'team_id': teamData.id,
         'name': sanitizedNewTeam
       }).then(result => {
-        winston.debug(`Done renaming team: ${org}/${sanitizedTeam} -> ${org}/${sanitizedNewTeam}`)
+        console.log(`Done renaming team: ${org}/${sanitizedTeam} -> ${org}/${sanitizedNewTeam}`)
       }).catch(err => logError(err, 'team:update'));
     }
   };
@@ -276,7 +275,7 @@ module.exports = function(token) {
    */
   this.addRepo = function(org, repo) {
     if (repoCache.getKey(getRepoCacheKey(org, repo)) != null) {
-      winston.debug(`Repo with name ${repo} already exists for ${org}, skipping creation`);
+      console.log(`Repo with name ${repo} already exists for ${org}, skipping creation`);
       
       return repoCache.getKey(getRepoCacheKey(org, repo));
     }
@@ -291,7 +290,7 @@ module.exports = function(token) {
         // cache the result for later use
         repoCache.setKey(getRepoCacheKey(org, repo), result.data);
         
-        winston.debug(`Done creating repo for org: ${org}/${repo}`);
+        console.log(`Done creating repo for org: ${org}/${repo}`);
         return result.data;
       }).catch(err => logError(err, 'repos:createInOrg'));
     }
@@ -306,7 +305,7 @@ module.exports = function(token) {
   };
   
   this.editTeam = async function(teamId, teamName, options) {
-    winston.debug(`Updating team ${teamId} settings: ${JSON.stringify(options)}`);
+    console.log(`Updating team ${teamId} settings: ${JSON.stringify(options)}`);
     // allow for other options being set
     var opt = options;
     if (opt == null) {
@@ -328,7 +327,7 @@ module.exports = function(token) {
     if (prefetch['teams'][org] == true) {
       return;
     }
-    winston.info(`Starting prefetch for teams in org=${org}`);
+    console.log(`Starting prefetch for teams in org=${org}`);
     
     var options = octokit.teams.list.endpoint.merge({
       'org': org
@@ -351,7 +350,7 @@ module.exports = function(token) {
     
     // set the prefetch flag for org to true
     prefetch['teams'][org] = true;
-    winston.info(`Finished prefetch for org=${org}, got ${count} teams`);
+    console.log(`Finished prefetch for org=${org}, got ${count} teams`);
   };
   
   /**
@@ -362,7 +361,7 @@ module.exports = function(token) {
     if (prefetch['repos'][org] == true) {
       return;
     }
-    winston.info(`Starting prefetch for repos in org=${org}`);
+    console.log(`Starting prefetch for repos in org=${org}`);
     var options = octokit.repos.listForOrg.endpoint.merge({
       'org': org
     });
@@ -383,7 +382,7 @@ module.exports = function(token) {
 
     // set the prefetch flag for org to true
     prefetch['repos'][org] = true;
-    winston.info(`Finished prefetch for org=${org}, got ${count} repos`);
+    console.log(`Finished prefetch for org=${org}, got ${count} repos`);
   }
   
   /**
@@ -403,7 +402,7 @@ module.exports = function(token) {
    * potential large repos. Returns raw results with no cache
    */
   this.getReposForTeam = async function(team) {
-    winston.debug(`Getting repos associated with team: ${team.name}`);
+    console.log(`Getting repos associated with team: ${team.name}`);
     var options = octokit.teams.listRepos.endpoint.merge({
       'team_id': team.id
     });
@@ -429,7 +428,7 @@ function getTeam(org, team) {
   var cacheKey = getTeamCacheKey(org, sanitizeTeamName(team));
   var cachedResult = teamCache.getKey(cacheKey);
   
-  winston.debug(`Getting team for key: ${cacheKey}`);
+  console.log(`Getting team for key: ${cacheKey}`);
   // fetch if we don't have a cached result
   if (cachedResult == null) {
     callCount++;
@@ -444,7 +443,7 @@ function getTeam(org, team) {
       return JSON.parse(JSON.stringify(result.data));
     }).catch(err => logError(err, 'team:getByName'));
   } else {
-    winston.debug(`Found cached result for key ${cacheKey}`);
+    console.log(`Found cached result for key ${cacheKey}`);
     
     // return result to be immediately used
     return JSON.parse(JSON.stringify(cachedResult));
@@ -460,7 +459,7 @@ async function getTeamMembers(org, team, teamId) {
   var cacheKey = getTeamMembersCacheKey(org, team);
   var cachedResult = teamCache.getKey(cacheKey);
 
-  winston.debug(`Getting team members for key: ${cacheKey}`);
+  console.log(`Getting team members for key: ${cacheKey}`);
   // fetch if we don't have a cached result
   if (cachedResult == null) {
     // loop through all available users, and add them to a list to be returned
@@ -480,7 +479,7 @@ async function getTeamMembers(org, team, teamId) {
     // return the data for usage
     return Array.from(data);
   } else {
-    winston.debug(`Found cached result for key ${cacheKey}`);
+    console.log(`Found cached result for key ${cacheKey}`);
     
     // return result to be immediately used
     return Array.from(cachedResult);
@@ -508,11 +507,11 @@ function getRepoCacheKey(org, repo) {
  * additional contextual information.
  */
 function logError(err, root) {
-  winston.error(`API encountered errors processing current request (${root}). More information is available in log file`);
+  console.log(`API encountered errors processing current request (${root}). More information is available in log file`);
   if (err.errors) {
     for (var i = 0; i < err.errors.length; i++) {
-      winston.debug(`${err.errors[i].message}`);
+      console.log(`${err.errors[i].message}`);
     }
   }
-  winston.debug(err);
+  console.log(err);
 }

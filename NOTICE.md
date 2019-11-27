@@ -51,10 +51,6 @@ The project maintains the following source code repositories:
 
 * License: The MIT License (MIT)
 
-### winston (3.2.1)
-
-* License: The MIT License (MIT)
-
 ### Cache.js (master)
 
 * License: The MIT License (MIT)

@@ -14,7 +14,6 @@
 const axios = require('axios');
 
 const TimeCache = require('./TimeCache.js');
-const winston = require('winston');
 
 // variables for use with the cache
 const httpCacheID = 'http.cache';
@@ -26,7 +25,7 @@ module.exports = function() {
     // check that we haven't retrieved data yet
     var cacheResult = httpCache.getKey(url);
     if (cacheResult != null) {
-      winston.debug(`Found cached result for endpoint call ${url}`);
+      console.log(`Found cached result for endpoint call ${url}`);
       return cacheResult;
     }
     
@@ -37,7 +36,7 @@ module.exports = function() {
         
         return result.data;
       })
-      .catch(err => winston.error(err));
+      .catch(err => console.log(err));
   };
   
   this.close = function() {
