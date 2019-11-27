@@ -39,23 +39,6 @@ var argv = require('yargs')
 const axios = require('axios');
 const fs = require('fs');
 const parse = require('parse-link-header');
-const winston = require('winston');
-const { format } = require('logform');
-
-var now = new Date();
-winston.configure({
-  format: winston.format.combine(  
-      format.timestamp(),
-      format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
-    ),
-  transports: [
-    new winston.transports.File({ 
-      filename: `logs/sync-${now.getUTCFullYear()}-${now.getUTCMonth()+1}-${now.getUTCDate()}.log`, 
-      level: 'debug' 
-      }),
-    new winston.transports.Console({ level: argv.V ? 'debug' : 'error' })
-  ]
-});
 
 //create global placeholder for wrapper
 var wrap;
@@ -79,7 +62,7 @@ function _prepareSecret() {
      if (!err && data != undefined) {
          _init(data.trim());
      } else {
-         winston.error("Error while reading access token: " + err);
+         console.log("Error while reading access token: " + err);
          return;
      }
   });
@@ -91,7 +74,7 @@ function _prepareSecret() {
  */
 async function _init(secret) {
   if (secret == undefined || secret == "") {
-    winston.error("Could not fetch API secret, exiting");
+    console.log("Could not fetch API secret, exiting");
     return;
   }
   
@@ -131,7 +114,7 @@ async function _init(secret) {
     }
   }
   
-  winston.info(`Finished preloading ${data.length} projects`);
+  console.log(`Finished preloading ${data.length} projects`);
   // start the sync operation.
   await runSync(data);
   
@@ -147,13 +130,13 @@ async function runSync(data) {
     var project = data[key];
     var projectID = project.project_id;
     var repos = project.github_repos;
-    winston.debug(`Project ID: ${projectID}`);
+    console.log(`Project ID: ${projectID}`);
     
     // maintain orgs used by this project
     var orgs = [];
     for (var idx in repos) {
       var repoUrl = repos[idx].url;
-      winston.debug(`Checking repo URL: ${repoUrl}`);
+      console.log(`Checking repo URL: ${repoUrl}`);
       // strip the repo url to get the org + repo
       var match = /\/([^\/]+)\/([^\/]+)\/?$/.exec(repoUrl);
       // check to make sure we got a match
@@ -164,11 +147,11 @@ async function runSync(data) {
       // get the org + repo from the repo URL
       var org = match[1];
       var repo = match[2];
-      winston.debug(`Starting sync for org=${org};repo=${repo}`);
+      console.log(`Starting sync for org=${org};repo=${repo}`);
       
       // check if we've processed this org yet, if not, then create teams and add users
       if (!orgs.includes(org)) {
-        winston.debug(`Generating teams for ${org}/${repo}`);
+        console.log(`Generating teams for ${org}/${repo}`);
         await processOrg(org, project);
         
         orgs.push(org);
@@ -183,16 +166,16 @@ async function runSync(data) {
           await wrap.addRepoToTeam(org, `${projectID}-committers`, repo, "push");
           await wrap.addRepoToTeam(org, `${projectID}-contributors`, repo);
         } catch (e) {
-          winston.error(`Error while updating ${projectID}. \n${e}`);
+          console.log(`Error while updating ${projectID}. \n${e}`);
         }
       } else {
-        winston.warn(`Dry run set, not adding repo '${repo}' for org: ${org}`);
+        console.log(`Dry run set, not adding repo '${repo}' for org: ${org}`);
       }
     }
   }
   // log how long it took to do this stuff
   var end = new Date();
-  winston.info(`Start: ${start}, end: ${end}, calls: ${wrap.getCallCount()}`);
+  console.log(`Start: ${start}, end: ${end}, calls: ${wrap.getCallCount()}`);
 }
 
 async function processOrg(org, project) {
@@ -212,23 +195,23 @@ async function processOrg(org, project) {
 async function updateTeam(org, project, grouping) {
   var projectID = project.project_id;
   var teamName = `${projectID}-${grouping}`;
-  winston.debug(`Syncing team '${teamName}' for organization ${org}`);
+  console.log(`Syncing team '${teamName}' for organization ${org}`);
   var team = await wrap.addTeam(org, teamName);
   // set team to private
   var result = await wrap.editTeam(team.id, teamName, {"privacy": "secret"});
   var members = await wrap.getTeamMembers(org, teamName, team.id);
   
-  winston.debug(`${grouping} members: ${JSON.stringify(members)}`);
+  console.log(`${grouping} members: ${JSON.stringify(members)}`);
   for (var idx in project[grouping]) {
     // get the user via cached HTTP
     var user = await cHttp.getData(project[grouping][idx].url);
     if (user === undefined) {
-      winston.warn(`User '${project[grouping][idx].name}' had no associated data on Eclipse API`);
+      console.log(`User '${project[grouping][idx].name}' had no associated data on Eclipse API`);
       continue;
     }
     // check if github handle is null or empty
     if (!user.github_handle || user.github_handle.trim() === "") {
-      winston.warn(`User '${project[grouping][idx].name}' has no associated GitHub username, skipping`);
+      console.log(`User '${project[grouping][idx].name}' has no associated GitHub username, skipping`);
       continue;
     }
 
@@ -241,7 +224,7 @@ async function updateTeam(org, project, grouping) {
     Atomics.wait(int32, 0, 0, waitTimeInMS);
   }
 
-  winston.debug(`Leftover members: ${JSON.stringify(members)}`);
+  console.log(`Leftover members: ${JSON.stringify(members)}`);
   // Commented out until Eclipse API endpoint exists to get user for github handle
   /*
   if (members != undefined) {

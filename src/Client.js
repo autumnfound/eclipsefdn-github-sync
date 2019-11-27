@@ -13,11 +13,6 @@
 
 var wrapper = require('./GitWrapper.js');
 const fs = require('fs');
-const winston = require('winston');
-
-var now = new Date();
-winston.add(new winston.transports.File({ filename: `logs/cli-${now.getUTCFullYear()}-${now.getUTCMonth()+1}-${now.getUTCDate()}.log` }));
-winston.add(new winston.transports.Console({ level: 'error' }));
 
 // set up yargs command line parsing
 var argv = require('yargs')
@@ -78,7 +73,7 @@ function _prepareSecret() {
      if (!err && data != undefined && data.length > 0) {
          run(argv, data.trim());
      } else {
-         winston.error("Error while reading access token: " + err);
+         console.log("Error while reading access token: " + err);
          return;
      }
   });
@@ -87,7 +82,7 @@ function _prepareSecret() {
 function run(argv, secret) {
   // check that we have a command
   if (!argv._ || !argv._[0]) {
-    winston.debug('The <command> must be set to use the toolset');
+    console.log('The <command> must be set to use the toolset');
     return;
   }
   
