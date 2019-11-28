@@ -47,7 +47,7 @@ var cHttp;
 //thread sleeping to prevent abuse of API
 var sab = new SharedArrayBuffer(1024);
 var int32 = new Int32Array(sab);
-const waitTimeInMS = 1000;
+const waitTimeInMS = 500;
 
 _prepareSecret();
 
