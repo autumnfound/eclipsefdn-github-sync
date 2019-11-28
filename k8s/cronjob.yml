@@ -4,7 +4,7 @@ metadata:
   name: eclipsefdn-github-sync
   namespace: foundation-internal-webdev-apps
 spec:
-  schedule: "*/20 * * * *"
+  schedule: "5 */2 * * *"
   # if it is time for a new job run and the previous job run hasn’t finished yet, the cron job skips the new job run
   concurrencyPolicy: Forbid
   jobTemplate:
