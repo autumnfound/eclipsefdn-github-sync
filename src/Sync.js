@@ -194,7 +194,7 @@ async function processOrg(org, project) {
 
 async function updateTeam(org, project, grouping) {
   var projectID = project.project_id;
-  var teamName = `${projectID}-${grouping}`;
+  var teamName = wrap.sanitizeTeamName(`${projectID}-${grouping}`);
   console.log(`Syncing team '${teamName}' for organization ${org}`);
   var team = await wrap.addTeam(org, teamName);
   // set team to private
