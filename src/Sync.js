@@ -29,6 +29,11 @@ var argv = require('yargs')
     description: 'Sets the script to run in verbose mode',
     boolean: true
   })
+  .option('D', {
+    alias: 'deletionDryRun',
+    description: 'Runs the script in a semi-dryrun state to prevent deletions of users',
+    boolean: true
+  })
   .help('h')
   .alias('h', 'help')
   .version('0.1')
@@ -121,8 +126,6 @@ async function _init(secret) {
   // close the wrappers, persisting required cache info
   cHttp.close();
 }
-
-
 
 async function runSync(data) {
   var start = new Date();
@@ -226,10 +229,22 @@ async function updateTeam(org, project, grouping) {
 
   console.log(`Leftover members: ${JSON.stringify(members)}`);
   // Commented out until Eclipse API endpoint exists to get user for github handle
-  /*
   if (members != undefined) {
+  
     for (var i = 0; i < members.length; i++) {
-      //await wrap.removeUserFromTeam(org, teamName, members[i].login);
+      var url = `https://api.eclipse.org/github/profile/${members[i].login}`;
+      var result = await axios.get(url).then(result => {
+        return result.data;
+      }).catch(err => console.log(`Received error from Eclipse API querying for : ${err}`));
+      // check that we know the user before removing
+      if (result != null && result["github_handle"] === members[i].login) {
+        if (argv.D !== true) {
+          console.log(`Removing ${members[i].login} from team ${teamName}`);
+          await wrap.removeUserFromTeam(org, teamName, members[i].login);
+        } else {
+          console.log(`Would have deleted ${members[i].login}, but in semi-dry run mode`);
+        }
+      }
     }
-  }*/
+  }
 }
