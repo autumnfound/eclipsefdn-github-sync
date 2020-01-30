@@ -54,7 +54,10 @@ module.exports = function() {
         
         return result;
       })
-      .catch(err => err);
+      .catch(err => {
+    	  console.log(err);
+    	  return err;
+      });
     return raw;
   };
   
