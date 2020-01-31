@@ -22,8 +22,10 @@ const flatCache = require('flat-cache');
 // variables for use with the cache
 const teamCacheID = '1';
 const repoCacheID = '2';
+const orgCacheID = '3';
 let teamCache = flatCache.load(teamCacheID);
 let repoCache = flatCache.load(repoCacheID);
+let orgCache = flatCache.load(orgCacheID);
 
 // keep track of which prefetches have been completed
 let prefetch = {
@@ -442,6 +444,142 @@ module.exports = function(token) {
       return Array.from(cachedResult);
     }
   };
+  
+  this.getOrgCollaborators = async function(org) {
+    var cachedResult = orgCache.getKey(org);
+
+    console.log(`Getting invited members for key: ${org}`);
+    // fetch if we don't have a cached result
+    if (cachedResult == null) {
+      // loop through all available users, and add them to a list to be returned
+      var options = octokit.orgs.listOutsideCollaborators.endpoint.merge({
+        'org': org,
+      });
+      var data = await octokit.paginate(options)
+        .then(result => result)
+        .catch(err => logError(err, 'orgs:listOutsideCollaborators'));
+      if (data == undefined) {
+        return undefined;
+      }
+      
+      // save the data to cache to avoid reprocessing
+      orgCache.setKey(org, data);
+      
+      // return the data for usage
+      return Array.from(data);
+    } else {
+      console.log(`Found cached result for key ${org}`);
+      
+      // return result to be immediately used
+      return Array.from(cachedResult);
+    }
+  };
+  
+  this.getRepoCollaborators = async function(org, repo, affiliation = "direct") {
+    // generate a cache key and check if we have a valid cache result.
+    var cacheKey = getRepoCollaboratorCacheKey(org, repo);
+    var cachedResult = repoCache.getKey(cacheKey);
+
+    console.log(`Getting collaborators for key: ${cacheKey}`);
+    // fetch if we don't have a cached result
+    if (cachedResult == null) {
+      // loop through all available users, and add them to a list to be returned
+      var options = octokit.repos.listCollaborators.endpoint.merge({
+        'owner': org,
+        'repo': repo,
+        'affiliation': affiliation
+      });
+      var data = await octokit.paginate(options)
+        .then(result => result)
+        .catch(err => logError(err, 'team:listCollaborators'));
+      if (data == undefined) {
+        return undefined;
+      }
+      
+      // save the data to cache to avoid reprocessing
+      teamCache.setKey(cacheKey, data);
+      
+      // return the data for usage
+      return Array.from(data);
+    } else {
+      console.log(`Found cached result for key ${cacheKey}`);
+      
+      // return result to be immediately used
+      return Array.from(cachedResult);
+    }
+  };
+  
+
+  this.removeUserAsCollaborator = async function(org, repo, uname) {  
+    if (!org || !repo || !uname) {
+      console.log('removeUserAsCollaborator command requires organization, repo, and uname to be set');
+      return;
+    }
+    
+    var collabs = await this.getRepoCollaborators(org, repo);
+    if (collabs == null) {
+      console.log(`Could not find collaborators for team ${org}/${repo}`);
+      return;
+    }
+    var isCollaborator = false;
+    for (var i = 0; i < collabs.length; i++) {
+      if (collabs[i].login == uname) {
+        isCollaborator = true;
+        break;
+      }
+    }
+    if (!isCollaborator) {
+      console.log(`User with usernmae '${uname}' is not a collaborator on ${org}/${repo}, cannot remove`);
+      return;
+    }
+
+    // if not set to dryrun, invite user to team
+    if (!this.dryrun) {
+      callCount++;
+      return octokit.repos.removeCollaborator({
+        'owner': org,
+        'repo': repo,
+        'username': uname
+      }).then(result => {
+        console.log(`Done removing user from team: ${uname} -> ${org}/${repo}`)
+      }).catch(err => logError(err, 'repo:removeCollaborator'));
+    }
+  };
+  
+  this.removeUserAsOutsideCollaborator = async function(org, uname) {  
+    if (!org || !uname) {
+      console.log('removeUserAsOutsideCollaborator command requires organization and uname to be set');
+      return;
+    }
+    
+    var collabs = await this.getOrgCollaborators(org);
+    if (collabs == null) {
+      console.log(`Could not find outside collaborators for team ${org}`);
+      return;
+    }
+    var isCollaborator = false;
+    for (var i = 0; i < collabs.length; i++) {
+      if (collabs[i].login == uname) {
+        isCollaborator = true;
+        break;
+      }
+    }
+    if (!isCollaborator) {
+      console.log(`User with usernmae '${uname}' is not an outside collaborator on ${org}, cannot remove`);
+      return;
+    }
+
+    // if not set to dryrun, remove outside collaborator from org
+    if (!this.dryrun) {
+      callCount++;
+      return octokit.orgs.removeOutsideCollaborator({
+        'org': org,
+        'username': uname
+      }).then(result => {
+        console.log(`Done removing outside collaborator from org: ${uname} -> ${org}`)
+      }).catch(err => logError(err, 'orgs:removeOutsideCollaborator'));
+    }
+  };
 
   this.sanitizeTeamName = function(name) {
     return name.toLowerCase().replace(/[^\s\da-zA-Z-]/g, '-');
@@ -532,6 +670,10 @@ function getTeamMembersCacheKey(org, team) {
 
 function getInvitedMembersCacheKey(org, team) {
   return `${getTeamCacheKey(org, team)}:invited`;
+}
+
+function getRepoCollaboratorCacheKey(org, repo) {
+  return `${getRepoCacheKey(org, repo)}:collab`;
 }
 
 function getRepoCacheKey(org, repo) {
