@@ -215,6 +215,7 @@ async function runSync(data) {
           // Ensure that the teams refer to the repo
           await wrap.addRepoToTeam(org, `${projectID}-committers`, repoName, "push");
           await wrap.addRepoToTeam(org, `${projectID}-contributors`, repoName);
+          await wrap.addRepoToTeam(org, `${projectID}-project-leads`, repoName, "pull", false);
         } catch (e) {
           console.log(`Error while updating ${projectID}. \n${e}`);
         }
@@ -237,6 +238,7 @@ async function processOrg(org, project) {
   if (!argv.d) {
     await updateTeam(org, project, 'contributors');
     await updateTeam(org, project, 'committers');
+    await updateTeam(org, project, 'project_leads');
   } else {
     console.log('Dry run set, not adding teams for org: ' + org);
   }
