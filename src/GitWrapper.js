@@ -12,11 +12,13 @@
 
 
 // add additional plugins for octokit to meet best practices
-const Octokit = require('@octokit/rest')
-  .plugin([
-    require('@octokit/plugin-retry'),
-    require('@octokit/plugin-throttling')
-  ]);
+const { Octokit } = require('@octokit/rest');
+const throttling = require("@octokit/plugin-throttling");
+const retry = require("@octokit/plugin-retry");
+
+const ExtendedOctokit = Octokit
+	.plugin(retry)
+    .plugin(throttling);
 const flatCache = require('flat-cache');
 
 // variables for use with the cache
@@ -45,7 +47,7 @@ var callCount = 0;
 
 module.exports = function(token) {
   // instantiate octokit
-  octokit = new Octokit({
+  octokit = new ExtendedOctokit({
     auth: token,
     throttle: {
       onRateLimit: (retryAfter, options) => {
@@ -664,24 +666,36 @@ async function getTeamMembers(org, team, teamId) {
   }
 }
 
-async function doesTeamManageRepo(org, team, repo) {
-  if (!org || !team || !repo) {
+async function doesTeamManageRepo(org, teamName, repo) {
+  if (!org || !teamName || !repo) {
     console.log('checkManagesRepoInOrg command requires organization, team, and repo to be set');
     return;
   }
-  var sanitizedTeam = sanitizeTeamName(team);
-  var cachedResult = teamCache.getKey(getTeamManagementCacheKey(org, sanitizedTeam, repo));
+  var sanitizedTeamName = sanitizeTeamName(teamName);
+  // get the team for its ID
+  var team = getTeam(org, sanitizedTeamName);
+  if (team == undefined) {
+	  console.log(`Could not find team for ${org}/${sanitizedTeam}, returning false for team management`);
+	  return false;
+  }
+  // check if we already know about this teams management of repo
+  var cachedResult = teamCache.getKey(getTeamManagementCacheKey(org, team.id, repo));
   if (cachedResult != null) {
     return cachedResult;
   }
-  var result = await octokit.teams.checkManagesRepoInOrg({
-    'org': org,
-    'team_slug': sanitizedTeam,
-    'owner': org,
-    'repo': repo
-  });
-  teamCache.setKey(getTeamManagementCacheKey(org, sanitizedTeam, repo), result.status == 204);
-  return result.status == 204;
+  // attempt to check, catching errors which throw on 404s
+  try {
+	  var result = await octokit.teams.checkManagesRepoLegacy({
+	    'team_id': team.id,
+	    'owner': org,
+	    'repo': repo
+	  });
+	  teamCache.setKey(getTeamManagementCacheKey(org, team.id, repo), result.status == 204);
+	  return result.status == 204;
+  } catch (e) {
+	  console.log('Retrieved an error, assuming team does not manage repo');
+	  return false;
+  }
 }
 
 function sanitizeTeamName(name) {
