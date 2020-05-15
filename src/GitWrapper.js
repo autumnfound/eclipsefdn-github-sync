@@ -17,7 +17,7 @@ const throttling = require("@octokit/plugin-throttling");
 const retry = require("@octokit/plugin-retry");
 
 const ExtendedOctokit = Octokit
-	.plugin(retry)
+  .plugin(retry)
     .plugin(throttling);
 const flatCache = require('flat-cache');
 
@@ -108,68 +108,68 @@ module.exports = function(token) {
       return cachedResult;
     }
     
-	  // call the API if dry run is not set
-	  if (!this.dryrun) {
-	    callCount++;
-	    return octokit.teams.create({
-	      'org': org,
-	      'name': sanitizedTeam,
-	      'privacy': 'closed'
-	    }).then(result => {
-	      // cache the result for later use
-	      teamCache.setKey(getTeamCacheKey(org, sanitizedTeam), result.data);
-	      
-	      console.log(`Done creating team with name: ${org}:${sanitizedTeam}`);
-	      return result.data;
-	    }).catch(err => logError(err, 'team:create'));
-	  } else {
-	    console.log(`Dry run set, not writing new team ${org}:${sanitizedTeam}`);
-	  }
-	};
-	
-	/**
-	 * Adds repository to given team in organization. First calls GitHub to get
-	 * an ID given team name and organization. This ID is used in call to attach
-	 * given repo to a team.
-	 */
-	this.addRepoToTeam = async function(org, team, repo, permissions = "pull", overwrite = true) {  
+    // call the API if dry run is not set
+    if (!this.dryrun) {
+      callCount++;
+      return octokit.teams.create({
+        'org': org,
+        'name': sanitizedTeam,
+        'privacy': 'closed'
+      }).then(result => {
+        // cache the result for later use
+        teamCache.setKey(getTeamCacheKey(org, sanitizedTeam), result.data);
+        
+        console.log(`Done creating team with name: ${org}:${sanitizedTeam}`);
+        return result.data;
+      }).catch(err => logError(err, 'team:create'));
+    } else {
+      console.log(`Dry run set, not writing new team ${org}:${sanitizedTeam}`);
+    }
+  };
+  
+  /**
+   * Adds repository to given team in organization. First calls GitHub to get
+   * an ID given team name and organization. This ID is used in call to attach
+   * given repo to a team.
+   */
+  this.addRepoToTeam = async function(org, team, repo, permissions = "pull", overwrite = true) {  
     if (!org || !team || !repo) {
       console.log('addRepoToTeam command requires organization, team, and repo to be set');
       return;
     }
     if (!overwrite && (await doesTeamManageRepo(org, team, repo))) {
-    	console.log(`${org}/${repo} is already managed by ${team} and is set to not overwrite, returning`);
-    	return;
+      console.log(`${org}/${repo} is already managed by ${team} and is set to not overwrite, returning`);
+      return;
     }
     var sanitizedTeam = sanitizeTeamName(team);
-	// call the API to get additional information about the team
-	var teamData = await getTeam(org, sanitizedTeam);
+  // call the API to get additional information about the team
+  var teamData = await getTeam(org, sanitizedTeam);
     // check if data was returned
-		if (teamData == null) {
-			return;
-		}
-		
-	// if not set to dryrun, add repo to team in given org
+    if (teamData == null) {
+      return;
+    }
+    
+  // if not set to dryrun, add repo to team in given org
     if (!this.dryrun) {
       callCount++;
-	    return octokit.teams.addOrUpdateRepo({
-			  'owner': org,
-			  'team_id': teamData.id,
-			  'repo': repo,
-			  'permission': permissions
-			}).then(result => {
-			  console.log(`Done adding repo to team: ${repo} -> ${org}/${sanitizedTeam}`)
-			}).catch(err => logError(err, 'team:addOrUpdateRepo'));
-	  } else {
-	    console.log(`Dry run set, not writing new team ${org}/${name}`);	  
-	  }
-	};
+      return octokit.teams.addOrUpdateRepo({
+        'owner': org,
+        'team_id': teamData.id,
+        'repo': repo,
+        'permission': permissions
+      }).then(result => {
+        console.log(`Done adding repo to team: ${repo} -> ${org}/${sanitizedTeam}`)
+      }).catch(err => logError(err, 'team:addOrUpdateRepo'));
+    } else {
+      console.log(`Dry run set, not writing new team ${org}/${name}`);    
+    }
+  };
   
-	/**
-	 * Invites user with username of 'uname' to the given team in given
-	 * organization. Checks current member list to see if user should be
-	 * invited.
-	 */
+  /**
+   * Invites user with username of 'uname' to the given team in given
+   * organization. Checks current member list to see if user should be
+   * invited.
+   */
   this.inviteUserToTeam = async function(org, team, uname) {  
     if (!org || !team || !uname) {
       console.log('inviteUserToTeam command requires organization, team, and uname to be set');
@@ -206,10 +206,10 @@ module.exports = function(token) {
   };
   
   /**
-	 * Removes user with username of 'uname' from the given team in given
-	 * organization. Checks current member list to see if user should be
-	 * removed.
-	 */
+   * Removes user with username of 'uname' from the given team in given
+   * organization. Checks current member list to see if user should be
+   * removed.
+   */
   this.removeUserFromTeam = async function(org, team, uname) {  
     if (!org || !team || !uname) {
       console.log('removeUserFromTeam command requires organization, team, and uname to be set');
@@ -251,8 +251,8 @@ module.exports = function(token) {
   };
   
   /**
-	 * Renames the given team in the organization with the passed new name.
-	 */
+   * Renames the given team in the organization with the passed new name.
+   */
   this.renameTeam = async function(org, team, newName) {
     if (!org || !team || !newName) {
       console.log('renameTeam command requires organization, team, and new team name to be set');
@@ -280,8 +280,8 @@ module.exports = function(token) {
   };
 
   /**
-	 * Creates a new repo with given name and an EPL-2.0 license.
-	 */
+   * Creates a new repo with given name and an EPL-2.0 license.
+   */
   this.addRepo = function(org, repo) {
     if (repoCache.getKey(getRepoCacheKey(org, repo)) != null) {
       console.log(`Repo with name ${repo} already exists for ${org}, skipping creation`);
@@ -306,9 +306,9 @@ module.exports = function(token) {
   }
 
   /**
-	 * Retrieve all team members associated with a team, using multiple calls if
-	 * necessary to get all users on a team.
-	 */
+   * Retrieve all team members associated with a team, using multiple calls if
+   * necessary to get all users on a team.
+   */
   this.getTeamMembers = async function(org, team, teamId) {
     return getTeamMembers(org, team, teamId);
   };
@@ -329,9 +329,9 @@ module.exports = function(token) {
   };
   
   /**
-	 * Prefetch and fill caches with all existing teams for the current org.
-	 * Will check if prefetch has already been performed for current org.
-	 */
+   * Prefetch and fill caches with all existing teams for the current org.
+   * Will check if prefetch has already been performed for current org.
+   */
   this.prefetchTeams = async function(org) {
     if (prefetch['teams'][org] == true) {
       return;
@@ -363,9 +363,9 @@ module.exports = function(token) {
   };
   
   /**
-	 * Prefetch and fill caches with all existing repos for the current org.
-	 * Will check if prefetch has already been performed for current org.
-	 */
+   * Prefetch and fill caches with all existing repos for the current org.
+   * Will check if prefetch has already been performed for current org.
+   */
   this.prefetchRepos = async function(org) {
     if (prefetch['repos'][org] == true) {
       return;
@@ -395,8 +395,8 @@ module.exports = function(token) {
   }
   
   /**
-	 * Gets all teams for a given organization
-	 */
+   * Gets all teams for a given organization
+   */
   this.getTeamsForOrg = async function(org) {
     await this.prefetchTeams(org);
     var out = [];
@@ -407,9 +407,9 @@ module.exports = function(token) {
   }
 
   /**
-	 * Wraps GitHub repo team functionality in paginate to reduce calls for
-	 * potential large repos. Returns raw results with no cache
-	 */
+   * Wraps GitHub repo team functionality in paginate to reduce calls for
+   * potential large repos. Returns raw results with no cache
+   */
   this.getReposForTeam = async function(team) {
     console.log(`Getting repos associated with team: ${team.name}`);
     var options = octokit.teams.listRepos.endpoint.merge({
@@ -429,7 +429,7 @@ module.exports = function(token) {
     // fetch if we don't have a cached result
     if (cachedResult == null) {
       // loop through all available users, and add them to a list to be
-		// returned
+    // returned
       var options = octokit.teams.listPendingInvitations.endpoint.merge({
         'team_id': teamId
       });
@@ -454,13 +454,14 @@ module.exports = function(token) {
   };
   
   this.getOrgCollaborators = async function(org) {
-    var cachedResult = orgCache.getKey(org);
+	var cacheKey = getOrgCollabCacheKey(org);
+    var cachedResult = orgCache.getKey(cacheKey);
 
-    console.log(`Getting invited members for key: ${org}`);
+    console.log(`Getting invited members for key: ${cacheKey}`);
     // fetch if we don't have a cached result
     if (cachedResult == null) {
       // loop through all available users, and add them to a list to be
-		// returned
+    // returned
       var options = octokit.orgs.listOutsideCollaborators.endpoint.merge({
         'org': org,
       });
@@ -472,12 +473,12 @@ module.exports = function(token) {
       }
       
       // save the data to cache to avoid reprocessing
-      orgCache.setKey(org, data);
+      orgCache.setKey(cacheKey, data);
       
       // return the data for usage
       return Array.from(data);
     } else {
-      console.log(`Found cached result for key ${org}`);
+      console.log(`Found cached result for key ${cacheKey}`);
       
       // return result to be immediately used
       return Array.from(cachedResult);
@@ -493,7 +494,7 @@ module.exports = function(token) {
     // fetch if we don't have a cached result
     if (cachedResult == null) {
       // loop through all available users, and add them to a list to be
-		// returned
+    // returned
       var options = octokit.repos.listCollaborators.endpoint.merge({
         'owner': org,
         'repo': repo,
@@ -590,6 +591,104 @@ module.exports = function(token) {
       }).catch(err => logError(err, 'orgs:removeOutsideCollaborator'));
     }
   };
+  
+  /**
+   * Updates permissions for a given organization given an object 
+   * with permissions and organization name.
+   */
+  this.updateOrgPermissions = function(org, permissions) {
+    if (org == undefined || org == "") {
+      console.log("Cannot update permissions for empty org name");
+      return;
+      }
+    if (permissions == undefined || !(permissions instanceof Object)) {
+      console.log("Cannot update organization with empty permissions");
+      return;
+    }
+    // copy the permissions, and set the org into the new params object
+    var params = JSON.parse(JSON.stringify(permissions));
+    params.org = org;
+    // required in v16 to enable additional management fields
+    params.mediaType= {
+      previews: ["surtur"]
+    };
+    if (!this.dryrun) {
+      // increment the call count  and update the permissions for the organization
+      callCount++;
+      return octokit.orgs.update(params).then(result => {
+    	// if verbose is set, print the parameters to console 
+        if (this.verbose) {
+          console.log(`Done updating org (${org}) to set parameters: ${JSON.stringify(params)}`);
+        } else {
+          console.log(`Done updating org (${org}) to set parameters.`);
+        }
+        }).catch(err => logError(err, 'orgs:update'));
+    } else {
+      console.log(`Dry run enabled, would have updated org (${org}) to set parameters: ${JSON.stringify(params)}`);
+    }
+  };
+  
+  this.getOrganization = function(org) {
+	  // generate a cache key and check if we have a valid cache result.
+	  var cacheKey = getOrgCacheKey(org);
+	  var cachedResult = orgCache.getKey(cacheKey);
+	  
+	  console.log(`Getting org for key: ${cacheKey}`);
+	  // fetch if we don't have a cached result
+	  if (cachedResult == null) {
+	    callCount++;
+	    return octokit.orgs.get({
+	      'org': org,
+	      'mediaType': {
+	    	previews: ["surtur"]
+	      }
+	    }).then(result => {
+	      // cache the data in memory for use later
+	      orgCache.setKey(cacheKey, result.data);
+	      // return the data to the user
+	      return JSON.parse(JSON.stringify(result.data));
+	    }).catch(err => logError(err, 'orgs:get'));
+	  } else {
+	    console.log(`Found cached result for key ${cacheKey}`);
+	    
+	    // return result to be immediately used
+	    return JSON.parse(JSON.stringify(cachedResult));
+	  }
+  };
+  
+  /**
+   * Used to read cached/discovered repositories given an org name.
+   */
+  this.getDiscoveredRepos = function(org) {
+	var out = [];
+    var keys = repoCache.keys();
+    var regex = new RegExp(`^${org}\/.*$`);
+    for (var kIdx in keys) {
+    	var key = keys[kIdx];
+    	if (regex.test(key)) {
+    		out.push(repoCache.getKey(key));
+    	}
+    }
+    return out;
+  };
+  
+  /**
+   * Used to read cached/discovered repositories given an org name.
+   */
+  this.getTeamsForRepo = async function(org, repo) {
+    if (!org || !repo) {
+      console.log('getTeamsForRepo command requires organization and repo to be set');
+      return;
+    }
+    // if not set to dryrun, remove outside collaborator from org
+    var options = octokit.repos.listTeams.endpoint.merge({
+	    'owner': org,
+	    'repo': repo
+	  });
+    return await octokit.paginate(options)
+	    .then(result => result)
+	    .catch(err => logError(err, 'repos:listTeams'));
+  };
 
   this.sanitizeTeamName = function(name) {
     return name.toLowerCase().replace(/[^\s\da-zA-Z-]/g, '-');
@@ -675,8 +774,8 @@ async function doesTeamManageRepo(org, teamName, repo) {
   // get the team for its ID
   var team = getTeam(org, sanitizedTeamName);
   if (team == undefined) {
-	  console.log(`Could not find team for ${org}/${sanitizedTeam}, returning false for team management`);
-	  return false;
+    console.log(`Could not find team for ${org}/${sanitizedTeam}, returning false for team management`);
+    return false;
   }
   // check if we already know about this teams management of repo
   var cachedResult = teamCache.getKey(getTeamManagementCacheKey(org, team.id, repo));
@@ -685,16 +784,16 @@ async function doesTeamManageRepo(org, teamName, repo) {
   }
   // attempt to check, catching errors which throw on 404s
   try {
-	  var result = await octokit.teams.checkManagesRepoLegacy({
-	    'team_id': team.id,
-	    'owner': org,
-	    'repo': repo
-	  });
-	  teamCache.setKey(getTeamManagementCacheKey(org, team.id, repo), result.status == 204);
-	  return result.status == 204;
+    var result = await octokit.teams.checkManagesRepoLegacy({
+      'team_id': team.id,
+      'owner': org,
+      'repo': repo
+    });
+    teamCache.setKey(getTeamManagementCacheKey(org, team.id, repo), result.status == 204);
+    return result.status == 204;
   } catch (e) {
-	  console.log('Retrieved an error, assuming team does not manage repo');
-	  return false;
+    console.log('Retrieved an error, assuming team does not manage repo');
+    return false;
   }
 }
 
@@ -724,7 +823,12 @@ function getRepoCollaboratorCacheKey(org, repo) {
 function getRepoCacheKey(org, repo) {
   return `${org}/${repo}`;
 }
-
+function getOrgCollabCacheKey(org) {
+	return `collaborators:${org}`;
+}
+function getOrgCacheKey(org) {
+	return `org:${org}`;
+}
 /**
  * Logs error content when passed, printing the root called that was passed for
  * additional contextual information.

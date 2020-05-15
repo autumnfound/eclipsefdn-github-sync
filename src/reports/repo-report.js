@@ -11,8 +11,8 @@
  ******************************************************************************/
 
 // custom wrappers
-const Wrapper = require('./GitWrapper.js');
-const CachedHttp = require('./HttpWrapper.js');
+const Wrapper = require('../GitWrapper.js');
+const CachedHttp = require('../HttpWrapper.js');
 const axios = require('axios');
 const parse = require('parse-link-header');
 
