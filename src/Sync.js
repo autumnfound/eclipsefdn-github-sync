@@ -43,6 +43,13 @@ var argv = require('yargs')
 const axios = require('axios');
 const fs = require('fs');
 const parse = require('parse-link-header');
+const defaultOrgPermissions = {
+	"default_repository_permission": "read",
+	"members_can_create_repositories": false,
+	"members_can_create_private_repositories": false,
+	"members_can_create_public_repositories": false,
+	"members_allowed_repository_creation_type": "none"
+};
 
 // create global placeholder for wrapper
 var wrap;
@@ -234,8 +241,9 @@ async function processOrg(org, project) {
   await wrap.prefetchTeams(org);
   await wrap.prefetchRepos(org);
   
-  // create the teams for the current org
+  // create the teams for the current org + update perms
   if (!argv.d) {
+	await wrap.updateOrgPermissions(org, defaultOrgPermissions);
     await updateTeam(org, project, 'contributors');
     await updateTeam(org, project, 'committers');
     await updateTeam(org, project, 'project_leads');
