@@ -11,6 +11,7 @@ pipeline {
         containers:
         - name: kubectl
           image: eclipsefdn/kubectl:1.14-alpine
+          imagePullPolicy: Always
           command:
           - cat
           tty: true
