@@ -94,7 +94,7 @@ async function run(secret) {
 		namedGroups[sanitizeGroupName(groups[groupIdx].path)] = groups[groupIdx];
 	}
 	for (var projectIdx in projects) {
-		namedProjects[projects[projectIdx].name] = projects[projectIdx];
+		namedProjects[getCompositeProjectKey(projects[projectIdx].name, projects[projectIdx].namespace.id)] = projects[projectIdx];
 	}
 	for (var userIdx in users) {
 		namedUsers[users[userIdx].username] = users[userIdx];
@@ -262,7 +262,7 @@ async function getProject(name, parent) {
 		return;
 	}
 	
-	var p = namedProjects[name];
+	var p = namedProjects[getCompositeProjectKey(name, parent.id)];
 	if (p == undefined) {
 		console.log(`Creating new project with name '${name}'`);
 		// create the request options for the new user
@@ -298,7 +298,7 @@ async function getProject(name, parent) {
 			console.log(`Created project: ${JSON.stringify(p)}`);
 		}
 		// set it back
-		namedProjects[name] = p;
+		namedProjects[getCompositeProjectKey(name, parent.id)] = p;
 	}
 	return p;
 }
@@ -470,3 +470,6 @@ function sanitizeGroupName(pid) {
 	return pid.toLowerCase().replace(/[^\s\da-zA-Z-]/g, '-');
 }
 
+function getCompositeProjectKey(projectName, parentId) {
+    return projectName + ':' + parentId;
+}
