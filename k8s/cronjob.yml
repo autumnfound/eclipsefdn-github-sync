@@ -9,18 +9,18 @@ spec:
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - preference:
-              matchExpressions:
-              - key: speed
-                operator: NotIn
-                values:
-                - fast
-            weight: 1
       template:
         spec:
+          affinity:
+            nodeAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+              - preference:
+                  matchExpressions:
+                  - key: speed
+                    operator: NotIn
+                    values:
+                    - fast
+                weight: 1
           containers:
           - name: eclipsefdn-github-sync
             image: eclipsefdn/eclipsefdn-github-sync:latest
