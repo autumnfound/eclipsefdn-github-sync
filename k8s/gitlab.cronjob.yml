@@ -39,7 +39,7 @@ spec:
               readOnly: true
               # workaround https://github.com/kubernetes/kubernetes/issues/65835
               subPath: access-token
-            - name: gitlab-sync-secrets
+            - name: gitlab-sync-secrets-oauth
               mountPath: "/run/secrets/eclipse-oauth-config"
               readOnly: true
               # workaround https://github.com/kubernetes/kubernetes/issues/65835
@@ -58,6 +58,11 @@ spec:
               items:
               - key: access-token
                 path: access-token
+          - name: gitlab-sync-secrets-oauth
+            secret:
+              secretName: gitlab-sync-secrets
+              # workaround https://github.com/kubernetes/kubernetes/issues/65835
+              items:
               - key: eclipse-oauth-config
                 path: eclipse-oauth-config
 ---
