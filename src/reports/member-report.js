@@ -1,12 +1,12 @@
-/*******************************************************************************
+/** *****************************************************************************
  * Copyright (C) 2019 Eclipse Foundation, Inc.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
  * https://www.eclipse.org/legal/epl-2.0/
- * 
+ *
  * Contributors: Martin Lowe <martin.lowe@eclipse-foundation.org>
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0
  ******************************************************************************/
 
@@ -25,12 +25,12 @@ var argv = require('yargs')
   .option('V', {
     alias: 'verbose',
     description: 'Sets the script to run in verbose mode',
-    boolean: true
+    boolean: true,
   })
   .option('o', {
     alias: 'org',
     description: 'The org to generate a member report for',
-    required: true
+    required: true,
   })
   .help('h')
   .alias('h', 'help')
@@ -51,7 +51,7 @@ const waitTimeInMS = 500;
 // read in secret from command line
 var rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
 
@@ -59,26 +59,26 @@ rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(a
 function acceptInput(answer) {
   var secret = answer.trim();
   if (!secret || secret.length == 0) {
-   console.log('A token is required to run sync functionality, please try again');
-   return rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
+    console.log('A token is required to run sync functionality, please try again');
+    return rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
   }
-  
+
   rl.close();
   run(secret);
 }
 
 async function run(secret) {
-  if (secret == undefined || secret == "") {
-    console.log("Could not fetch API secret, exiting");
+  if (secret == undefined || secret == '') {
+    console.log('Could not fetch API secret, exiting');
     return;
   }
-  
+
   // build wrapper
   wrap = new Wrapper(secret);
   wrap.setDryRun(argv.d);
 
   cHttp = new CachedHttp();
-  
+
   // get eclipse api data
   var rawData = await eclipseAPI();
   var data = await mapRepoToUsers(rawData, argv.o);
@@ -91,14 +91,14 @@ async function run(secret) {
     console.log(`Starting processing: ${team.slug}`);
     // get the members for the current team
     var members = await wrap.getTeamMembers(argv.o, wrap.sanitizeTeamName(team.slug), team.id);
-    
+
     // create secondary list to modify while looping
     var s = [];
     for (var member in members) {
       s.push(members[member].login.toLowerCase());
     }
     console.log(`Found ${s.length} members to process:\n\t${JSON.stringify(s)}`);
-    
+
     // for each of the repos for team, remove users who have access from
     // secondary list
     s = await removeTrackedUsers(s, data, team);
@@ -106,7 +106,7 @@ async function run(secret) {
     for (var rowIdx in rows) {
       remaining.push(rows[rowIdx]);
     }
-    
+
     // generate rows for untracked invited members
     var invitees = await wrap.getInvitedMembers(argv.o, team.slug, team.id);
     if (invitees != null) {
@@ -115,7 +115,7 @@ async function run(secret) {
         s.push(invitees[invitee].login.toLowerCase());
       }
       console.log(`Found ${s.length} invited members to process:\n\t${JSON.stringify(s)}`);
-      
+
       // remove tracked members whose invites are still pending
       s = await removeTrackedUsers(s, data, team);
       // generate rows with invited set to true
@@ -127,10 +127,10 @@ async function run(secret) {
     console.log(`Done processing: ${team.slug}`);
     Atomics.wait(int32, 0, 0, waitTimeInMS);
   }
-  console.log("GITHUB_HANDLE, ECLIPSE_UNAME, TEAM, ORGANIZATION, INVITED");
+  console.log('GITHUB_HANDLE, ECLIPSE_UNAME, TEAM, ORGANIZATION, INVITED');
   for (var i in remaining) {
     var currRow = remaining[i];
-    console.log(`${currRow["github"]},${currRow["uname"]},${currRow["team"]},${currRow["org"]},${currRow["invited"]}`);
+    console.log(`${currRow['github']},${currRow['uname']},${currRow['team']},${currRow['org']},${currRow['invited']}`);
   }
   cHttp.close();
 }
@@ -142,7 +142,7 @@ async function removeTrackedUsers(currMembers, trackedMembers, team) {
   var rs = await wrap.getReposForTeam(team);
   console.log(`Current list for team '${team.slug}': ${currMembers}`);
   for (var repoIdx in rs) {
-    var repoName = rs[repoIdx]["name"];
+    var repoName = rs[repoIdx]['name'];
     console.log(`Checking repo '${repoName}'`);
     var allowedUsers = trackedMembers[repoName];
     if (allowedUsers == null) {
@@ -174,12 +174,12 @@ async function generateDataRows(currMembers, teamName, org, invited = false) {
       return result.data;
     }).catch(err => console.log(`Received error from Eclipse API querying for : ${err}`));
     out.push({
-        "github":currMembers[memberIdx],
-        "team":teamName,
-        "org":org,
-        "uname": !result || result.name == null? "": result.name,
-        "invited": invited
-      });
+      github: currMembers[memberIdx],
+      team: teamName,
+      org: org,
+      uname: !result || result.name == null ? '' : result.name,
+      invited: invited,
+    });
   }
   return out;
 }
@@ -204,7 +204,7 @@ async function eclipseAPI() {
       }
       return r.data;
     }).catch(err => console.log(`Error while retrieving results from Eclipse Projects API (${url}): ${err}`));
-    
+
     // collect the results
     if (result != null && result.length > 0) {
       for (var i = 0; i < result.length; i++) {
@@ -220,38 +220,38 @@ async function mapRepoToUsers(data, org) {
   // map project repos to the project id
   var out = {};
   // for both committers + contributors, get repo => user mapping
-  var groupings = ["committers", "contributors"];
+  var groupings = ['committers', 'contributors'];
   for (var j in groupings) {
     var grouping = groupings[j];
     for (var k in data) {
       var proj = data[k];
       console.log(`Pre-processing project ${proj.project_id}`);
-      
+
       // get the repos for each of the projects
       var repos = getReposFromProject(proj, grouping, org);
       // stop processing if we don't have any valid repos
       if (repos.length == 0) {
-        console.log(`No repositories found for grouping '${grouping}' in project '${proj.project_id}'`)
+        console.log(`No repositories found for grouping '${grouping}' in project '${proj.project_id}'`);
         continue;
       }
       // get users for valid repos
       for (var l in proj[grouping]) {
         // get the user via cached HTTP
-        var eclipseUser = await cHttp.getData(proj[grouping][l]["url"]);
+        var eclipseUser = await cHttp.getData(proj[grouping][l]['url']);
         if (argv.v) {
-          console.log(`Getting user @ url ${JSON.stringify(eclipseUser)}`); 
+          console.log(`Getting user @ url ${JSON.stringify(eclipseUser)}`);
         }
         if (eclipseUser === undefined) {
           console.log(`User '${proj[grouping][l].username}' had no associated data on Eclipse API`);
           continue;
         }
-        if (!eclipseUser["github_handle"] || eclipseUser["github_handle"].trim() === "") {
+        if (!eclipseUser['github_handle'] || eclipseUser['github_handle'].trim() === '') {
           console.log(`User '${proj[grouping][l].username}' has no associated GitHub username, skipping`);
           continue;
         }
-        
+
         // get the handle
-        var githubHandle = eclipseUser["github_handle"].toLowerCase();
+        var githubHandle = eclipseUser['github_handle'].toLowerCase();
         for (var m in repos) {
           // get the list of users who have access for the repo
           console.log(`Handle: ${githubHandle}, repo ${repos[m]}`);
@@ -271,14 +271,14 @@ async function mapRepoToUsers(data, org) {
 
 function getReposFromProject(proj, grouping, org) {
   var repos = [];
-  for (var l in proj["github_repos"]) {
+  for (var l in proj['github_repos']) {
     // get repo url for current project
-    var gitUrl = proj["github_repos"][l]["url"];
+    var gitUrl = proj['github_repos'][l]['url'];
     var match = /\/([^\/]*)\/([^\/]*\/?)$/.exec(gitUrl);
     if (match == undefined) {
       continue;
     }
-    
+
     // get the org + repo from the repo URL
     var orgName = match[1];
     if (orgName != org) {
@@ -287,7 +287,7 @@ function getReposFromProject(proj, grouping, org) {
     }
     var repoName = match[2];
     if (repoName.endsWith('/')) {
-      repoName = repoName.substring(0, repoName.length -2);
+      repoName = repoName.substring(0, repoName.length - 2);
     }
 
     // retain the repo name

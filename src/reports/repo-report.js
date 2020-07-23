@@ -1,12 +1,12 @@
-/*******************************************************************************
+/** *****************************************************************************
  * Copyright (C) 2019 Eclipse Foundation, Inc.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
  * https://www.eclipse.org/legal/epl-2.0/
- * 
+ *
  * Contributors: Martin Lowe <martin.lowe@eclipse-foundation.org>
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0
  ******************************************************************************/
 
@@ -32,7 +32,7 @@ const waitTimeInMS = 333;
 // read in secret from command line
 var rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
 
@@ -49,8 +49,8 @@ function acceptInput(answer) {
 }
 
 async function run(secret) {
-  if (secret == undefined || secret == "") {
-    console.log("Could not fetch API secret, exiting");
+  if (secret == undefined || secret == '') {
+    console.log('Could not fetch API secret, exiting');
     return;
   }
 
@@ -89,8 +89,8 @@ async function run(secret) {
       }
     }
   }
-  //print data to console
-  console.log("GITHUB_UNAME,ECLIPSE_UNAME,ORG,REPO,ECA,IS_COMMITTER,IS_PL,READ_ACCESS,WRITE_ACCESS,IS_ADMIN");
+  // print data to console
+  console.log('GITHUB_UNAME,ECLIPSE_UNAME,ORG,REPO,ECA,IS_COMMITTER,IS_PL,READ_ACCESS,WRITE_ACCESS,IS_ADMIN');
   for (var rowIdx in auditNotes) {
     var row = auditNotes[rowIdx];
     console.log(`${row.github},${row.uname},${row.org},${row.repo},${row.eca},${row.committer},${row.lead},${row.read},${row.write},${row.admin}`);
@@ -104,7 +104,7 @@ async function processCollaborators(collaborators, projectId, org, repo) {
   }
   var audits = [];
   for (var collabIdx in collaborators) {
-    if (collaborators[collabIdx].login == "eclipsewebmaster") {
+    if (collaborators[collabIdx].login == 'eclipsewebmaster') {
       continue;
     }
     var row = await generateDataRow(collaborators[collabIdx], projectId, org, repo);
@@ -124,7 +124,7 @@ async function generateDataRow(collaborator, projectId, org, repo) {
     var url = `https://api.eclipse.org/github/profile/${uname}`;
     var result = await cHttp.getData(url);
     if (result != null) {
-      var projects = await cHttp.getData(result["projects_url"]);
+      var projects = await cHttp.getData(result['projects_url']);
       var projRels = projects[projectId];
       // check for Project Lead or Committer status
       var status = false;
@@ -132,40 +132,40 @@ async function generateDataRow(collaborator, projectId, org, repo) {
       if (projRels != null && projRels.length > 0) {
         for (var relIdx in projRels) {
           var rel = projRels[relIdx];
-          if (rel["Relation"]["Relation"] == "CM"
-            && rel["Relation"]["IsActive"] == "1") {
+          if (rel['Relation']['Relation'] == 'CM'
+            && rel['Relation']['IsActive'] == '1') {
             status = true;
           }
-          if (rel["Relation"]["Relation"] == "PL"
-            && rel["Relation"]["IsActive"] == "1") {
+          if (rel['Relation']['Relation'] == 'PL'
+            && rel['Relation']['IsActive'] == '1') {
             lead = true;
           }
         }
       }
       return {
-        "github": uname,
-        "uname": result.name,
-        "repo": repo,
-        "org": org,
-        "eca": result.eca.signed,
-        "committer": status,
-        "lead": lead,
-        "read": collaborator.permissions.pull,
-        "write": collaborator.permissions.push,
-        "admin": collaborator.permissions.admin,
+        github: uname,
+        uname: result.name,
+        repo: repo,
+        org: org,
+        eca: result.eca.signed,
+        committer: status,
+        lead: lead,
+        read: collaborator.permissions.pull,
+        write: collaborator.permissions.push,
+        admin: collaborator.permissions.admin,
       };
     }
     return {
-      "github": uname,
-      "uname": "",
-      "repo": repo,
-      "org": org,
-      "eca": false,
-      "committer": false,
-      "lead": false,
-      "read": collaborator.permissions.pull,
-      "write": collaborator.permissions.push,
-      "admin": collaborator.permissions.admin,
+      github: uname,
+      uname: '',
+      repo: repo,
+      org: org,
+      eca: false,
+      committer: false,
+      lead: false,
+      read: collaborator.permissions.pull,
+      write: collaborator.permissions.push,
+      admin: collaborator.permissions.admin,
     };
   } else {
     console.log(`'${uname}' was a bot for ${org}/${repo}`);
@@ -204,7 +204,7 @@ async function eclipseAPI() {
 }
 
 async function eclipseBots() {
-  var botsRaw = await cHttp.getData("https://api.eclipse.org/bots");
+  var botsRaw = await cHttp.getData('https://api.eclipse.org/bots');
   if (botsRaw == undefined) {
     console.log('Could not retrieve bots from API');
     process.exit(1);
@@ -216,14 +216,14 @@ function processBots(botsRaw) {
   var botMap = {};
   for (var botIdx in botsRaw) {
     var bot = botsRaw[botIdx];
-    if (bot["github.com"] == undefined) continue;
+    if (bot['github.com'] == undefined) continue;
 
-    var projBots = botMap[bot["projectId"]];
+    var projBots = botMap[bot['projectId']];
     if (projBots == undefined) {
       projBots = [];
     }
-    projBots.push(bot["github.com"]["username"]);
-    botMap[bot["projectId"]] = projBots;
+    projBots.push(bot['github.com']['username']);
+    botMap[bot['projectId']] = projBots;
   }
   return botMap;
 }

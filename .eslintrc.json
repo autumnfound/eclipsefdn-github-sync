@@ -1,0 +1,17 @@
+{
+  "extends": "strongloop",
+  "env": {
+    "node": true,
+    "es2017": true,
+    "browser": false
+  },
+	"parser": "babel-eslint",
+	"ignorePatterns": [
+		"test/*.js",
+		"**/vendor/*.js"
+	],
+	"rules": {
+	   "max-len": [1,120,2],
+	   "eqeqeq": 1
+	}
+}
