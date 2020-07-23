@@ -1,12 +1,12 @@
-/*******************************************************************************
+/** *****************************************************************************
  * Copyright (C) 2019 Eclipse Foundation, Inc.
- * 
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
  * https://www.eclipse.org/legal/epl-2.0/
- * 
+ *
  * Contributors: Martin Lowe <martin.lowe@eclipse-foundation.org>
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0
  ******************************************************************************/
 
@@ -22,12 +22,12 @@ var argv = require('yargs')
   .option('V', {
     alias: 'verbose',
     description: 'Sets the script to run in verbose mode',
-    boolean: true
+    boolean: true,
   })
   .option('t', {
     alias: 'throttle',
     description: 'The number of milliseconds to wait between calls',
-    default: 333
+    default: 333,
   })
   .help('h')
   .alias('h', 'help')
@@ -41,33 +41,31 @@ var readline = require('readline');
 var wrap;
 var cHttp;
 
-var bots;
-
 // thread sleeping to prevent abuse of API
 var sab = new SharedArrayBuffer(1024);
 var int32 = new Int32Array(sab);
 // fields desired for report
 var fields = [
-  "id",
-  "login",
-  "repo",
-  "html_url",
-  "default_repository_permission",
-  "members_can_create_repositories",
-  "members_allowed_repository_creation_type",
-  "members_can_create_public_repositories",
-  "members_can_create_private_repositories",
-  "members_can_create_internal_repositories",
+  'id',
+  'login',
+  'repo',
+  'html_url',
+  'default_repository_permission',
+  'members_can_create_repositories',
+  'members_allowed_repository_creation_type',
+  'members_can_create_public_repositories',
+  'members_can_create_private_repositories',
+  'members_can_create_internal_repositories',
   /* Custom fields for more info */
-  "missing_teams",
-  "invalid_admin_user"
+  'missing_teams',
+  'invalid_admin_user',
 ];
-var allowedAdmins = ["eclipsewebmaster"];
+var allowedAdmins = ['eclipsewebmaster'];
 
 // read in secret from command line
 var rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
 
@@ -75,27 +73,27 @@ rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(a
 function acceptInput(answer) {
   var secret = answer.trim();
   if (!secret || secret.length == 0) {
-   console.log('A token is required to run sync functionality, please try again');
-   return rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
+    console.log('A token is required to run sync functionality, please try again');
+    return rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
   }
-  
+
   rl.close();
   run(secret);
 }
 
 async function run(secret) {
-  if (secret == undefined || secret == "") {
-    console.log("Could not fetch API secret, exiting");
+  if (secret == undefined || secret == '') {
+    console.log('Could not fetch API secret, exiting');
     return;
   }
-  
+
   // build wrapper
   wrap = new Wrapper(secret);
   cHttp = new CachedHttp();
-  
+
   // get eclipse api data
   var data = retrieveMaintainedOrgRepos(await eclipseAPI());
-  var regex = new RegExp(".*(-committers|-contributors|-project-leads)$");
+  var regex = new RegExp('.*(-committers|-contributors|-project-leads)$');
   var rows = [];
   var keys = Object.keys(data);
   for (var idx in keys) {
@@ -112,7 +110,7 @@ async function run(secret) {
     for (var orgIdx in orgFields) {
       var field = orgFields[orgIdx];
       if (!fields.includes(field)) {
-      delete orgActual[field];
+        delete orgActual[field];
       }
     }
     // get all repos for org
@@ -123,7 +121,7 @@ async function run(secret) {
     // get copy of all found repos for org
     var repos = await wrap.getDiscoveredRepos(org);
     wait();
-    
+
     for (var rIdx in repos) {
       var foundRepo = repos[rIdx];
       // check if current repo is managed
@@ -139,10 +137,10 @@ async function run(secret) {
           break;
         }
       }
-      
+
       var hasInvalidAdmin = false;
       // if member has admin that isn't expected, error and include
-      var collabs = await wrap.getRepoCollaborators(org, foundRepo.name, "all");
+      var collabs = await wrap.getRepoCollaborators(org, foundRepo.name, 'all');
       wait();
       for (var cIdx in collabs) {
         var collaborator = collabs[cIdx];
@@ -166,20 +164,20 @@ async function run(secret) {
       }
     }
   }
-  
+
   // print data to console
-  var header = "";
+  var header = '';
   for (var fieldIdx in fields) {
-    header += fields[fieldIdx].toUpperCase() + ",";
+    header += fields[fieldIdx].toUpperCase() + ',';
   }
   console.log(header);
   for (var rowIdx in rows) {
-    var row = rows[rowIdx];
-    var out = "";
-    for (var fieldIdx in fields) {
-      out += row[fields[fieldIdx]];
-      if (fieldIdx < (fields.length - 1)) {
-        out += ",";
+    var writableRow = rows[rowIdx];
+    var out = '';
+    for (var writableFieldIdx in fields) {
+      out += writableRow[fields[writableFieldIdx]];
+      if (writableFieldIdx < (fields.length - 1)) {
+        out += ',';
       }
     }
     console.log(out);
@@ -206,8 +204,8 @@ async function eclipseAPI() {
         url = links.next.url;
       }
       return result.data;
-    }).catch(err => console.log('Error while loading EclipseAPI data'));
-    
+    }).catch(err => console.log('Error while loading EclipseAPI data: ' + err));
+
     // collect the results
     if (result != null && result.length > 0) {
       for (var i = 0; i < result.length; i++) {
@@ -219,34 +217,34 @@ async function eclipseAPI() {
 }
 
 function retrieveMaintainedOrgRepos(data) {
-    // maintain map of orgs to repos
-    var orgs = {};
-    for (var key in data) {
-        var project = data[key];
-        var repos = project.github_repos;
-        
-        // maintain orgs used by this project
-        for (var idx in repos) {
-          var repoUrl = repos[idx].url;
-          // strip the repo url to get the org + repo
-          var match = /\/([^\/]+)\/([^\/]+)\/?$/.exec(repoUrl);
-          // check to make sure we got a match
-          if (match == null) {
-            continue;
-          }
-          
-          // get the org from the repo URL
-          var org = match[1];
-          var repo = match[2];
-          if (orgs[org] == undefined) {
-            orgs[org] = [];
-          }
-          if (!orgs[org].includes(repo)) {
-          orgs[org].push(repo);
-          }
-        }
+  // maintain map of orgs to repos
+  var orgs = {};
+  for (var key in data) {
+    var project = data[key];
+    var repos = project.github_repos;
+
+    // maintain orgs used by this project
+    for (var idx in repos) {
+      var repoUrl = repos[idx].url;
+      // strip the repo url to get the org + repo
+      var match = /\/([^\/]+)\/([^\/]+)\/?$/.exec(repoUrl);
+      // check to make sure we got a match
+      if (match == null) {
+        continue;
+      }
+
+      // get the org from the repo URL
+      var org = match[1];
+      var repo = match[2];
+      if (orgs[org] == undefined) {
+        orgs[org] = [];
+      }
+      if (!orgs[org].includes(repo)) {
+        orgs[org].push(repo);
+      }
     }
-    return orgs;
+  }
+  return orgs;
 }
 
 function wait() {

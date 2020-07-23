@@ -62,3 +62,15 @@ The project maintains the following source code repositories:
 ### Mocha (7.0.1)
 
 * License: The MIT License (MIT)
+
+### ESLint (7.5.0)
+
+* License: The MIT License (MIT)
+
+### Babel-ESLint (10.1.0)
+
+* License: The MIT License (MIT)
+
+### ESLint-config-strongloop (2.1.0)
+
+* License: The Artistic License

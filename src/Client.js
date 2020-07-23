@@ -1,17 +1,17 @@
-/****************************************************************
+/** **************************************************************
  Copyright (C) 2019 Eclipse Foundation, Inc.
- 
+
  This program and the accompanying materials are made
  available under the terms of the Eclipse Public License 2.0
  which is available at https://www.eclipse.org/legal/epl-2.0/
- 
+
   Contributors:
     Martin Lowe <martin.lowe@eclipse-foundation.org>
-    
+
  SPDX-License-Identifier: EPL-2.0
 ******************************************************************/
 
-var wrapper = require('./GitWrapper.js');
+const Wrapper = require('./GitWrapper.js');
 const fs = require('fs');
 
 // set up yargs command line parsing
@@ -25,32 +25,32 @@ var argv = require('yargs')
   .option('t', {
     description: 'Name of team',
     alias: 'team',
-    nargs: 1
+    nargs: 1,
   })
   .option('o', {
     description: 'Name of organization',
     alias: 'organization',
-    nargs: 1
+    nargs: 1,
   })
   .option('r', {
     description: 'Name of repo',
     alias: 'repo',
-    nargs: 1
+    nargs: 1,
   })
   .option('u', {
     description: 'Name of user',
     alias: 'username',
-    nargs: 1
+    nargs: 1,
   })
   .option('R', {
     description: 'New name of team',
     alias: 'rename',
-    nargs: 1
+    nargs: 1,
   })
   .option('d', {
     alias: 'dryrun',
     description: 'Runs script as dry run, not writing any changes to API',
-    boolean: true
+    boolean: true,
   })
   .help('h')
   .alias('h', 'help')
@@ -64,37 +64,37 @@ _prepareSecret();
 
 /**
  * Retrieves secret API token from system, and then starts the script via _init
- * 
+ *
  * @returns
  */
 function _prepareSecret() {
-  //retrieve the secret API token
-  fs.readFile('/run/secrets/api-token', {encoding: 'utf-8'}, function(err,data){
-     if (!err && data != undefined && data.length > 0) {
-         run(argv, data.trim());
-     } else {
-         console.log("Error while reading access token: " + err);
-         return;
-     }
+  // retrieve the secret API token
+  fs.readFile('/run/secrets/api-token', {encoding: 'utf-8'}, function(err, data){
+    if (!err && data != undefined && data.length > 0) {
+      run(argv, data.trim());
+    } else {
+      console.log('Error while reading access token: ' + err);
+      return;
+    }
   });
 }
 
-function run(argv, secret) {
+async function run(argv, secret) {
   // check that we have a command
   if (!argv._ || !argv._[0]) {
     console.log('The <command> must be set to use the toolset');
     return;
   }
-  
-  var wrap = new wrapper(secret);
+
+  var wrap = new Wrapper(secret);
   if (!await wrap.checkAccess()) {
     return;
   }
   wrap.setDryRun(argv.dryrun);
-  
+
   // if add_team is set
   if (argv._[0] === 'add_team') {
-    wrap.addTeam(argv.o,argv.t);
+    wrap.addTeam(argv.o, argv.t);
   } else if (argv._[0] === 'add_repo_to_team') {
     wrap.addRepoToTeam(argv.o, argv.t, argv.r);
   } else if (argv._[0] === 'invite_user') {
