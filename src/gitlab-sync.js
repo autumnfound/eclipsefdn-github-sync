@@ -485,7 +485,7 @@ function sanitizeGroupName(pid) {
   if (pid !== undefined) {
     return pid.toLowerCase().replace(/[^\s\da-zA-Z-]/g, '-');
   }
-  return "";
+  return '';
 }
 
 function getCompositeProjectKey(projectName, parentId) {
