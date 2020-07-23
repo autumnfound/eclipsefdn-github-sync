@@ -59,6 +59,9 @@ pipeline {
     }
 
     stage('Push docker image') {
+      when {
+        branch 'master'
+      }
       agent {
         label 'docker-build'
       }
