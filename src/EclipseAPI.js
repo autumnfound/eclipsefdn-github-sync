@@ -9,7 +9,7 @@ module.exports = class EclipseAPI {
   constructor(config = {}) {
     this.#config = config;
     // if we have oauth config, intialize access token
-    if (this.#config.oauth !== undefined) {
+    if (this.#config.oauth != undefined) {
       const oauth = {
         client: {
           id: this.#config.oauth.client_id,
@@ -47,7 +47,7 @@ module.exports = class EclipseAPI {
       }).catch(err => console.log(`Error while retrieving results from Eclipse Projects API (${url}): ${err}`));
 
       // collect the results
-      if (result !== null && result.length > 0) {
+      if (result != null && result.length > 0) {
         for (var i = 0; i < result.length; i++) {
           data.push(result[i]);
         }
@@ -86,11 +86,11 @@ module.exports = class EclipseAPI {
         // set the computed data back to the objects
         repo.org = org;
         repo.repo = repoName;
-        if (project.pp_orgs.indexOf(org) === -1) {
+        if (project.pp_orgs.indexOf(org) == -1) {
           console.log(`Found new match, registered org=${org}`);
           project.pp_orgs.push(org);
         }
-        if (project.pp_repos.indexOf(repoName) === -1) {
+        if (project.pp_repos.indexOf(repoName) == -1) {
           console.log(`Found match, registered repo=${repoName}`);
           project.pp_repos.push(repoName);
         }
@@ -115,7 +115,7 @@ module.exports = class EclipseAPI {
     var botsRaw = await axios.get('https://api.eclipse.org/bots')
       .then(result => result.data)
       .catch(err => console.log(err));
-    if (botsRaw === undefined) {
+    if (botsRaw == undefined) {
       console.log('Could not retrieve bots from API');
       process.exit(1);
     }
@@ -126,10 +126,10 @@ module.exports = class EclipseAPI {
     var botMap = {};
     for (var botIdx in botsRaw) {
       var bot = botsRaw[botIdx];
-      if (bot[site] === undefined) continue;
+      if (bot[site] == undefined) continue;
 
       var projBots = botMap[bot['projectId']];
-      if (projBots === undefined) {
+      if (projBots == undefined) {
         projBots = [];
       }
       projBots.push(bot[site]['username']);
@@ -139,7 +139,7 @@ module.exports = class EclipseAPI {
   };
 
   async _getAccessToken() {
-    if (this.#accessToken === undefined || this.#accessToken.expired(this.#config.oauth.timeout | 3600)) {
+    if (this.#accessToken == undefined || this.#accessToken.expired(this.#config.oauth.timeout | 3600)) {
       try {
         this.#accessToken = await this.#client.getToken({
           scope: this.#config.oauth.scope,
