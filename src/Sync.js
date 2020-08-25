@@ -265,8 +265,8 @@ async function updateTeam(org, project, grouping) {
   console.log(`Syncing team '${teamName}' for organization ${org}`);
   var team = await wrap.addTeam(org, teamName);
   // set team to private
-  await wrap.editTeam(team.id, teamName, { privacy: 'secret' });
-  var members = await wrap.getTeamMembers(org, teamName, team.id);
+  await wrap.editTeam(org, teamName, { privacy: 'secret' });
+  var members = await wrap.getTeamMembers(org, team);
 
   console.log(`${grouping} members: ${JSON.stringify(members)}`);
   for (var idx in project[grouping]) {

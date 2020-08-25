@@ -90,7 +90,7 @@ async function run(secret) {
     var team = ts[idx];
     console.log(`Starting processing: ${team.slug}`);
     // get the members for the current team
-    var members = await wrap.getTeamMembers(argv.o, wrap.sanitizeTeamName(team.slug), team.id);
+    var members = await wrap.getTeamMembers(argv.o, team);
 
     // create secondary list to modify while looping
     var s = [];
@@ -108,7 +108,7 @@ async function run(secret) {
     }
 
     // generate rows for untracked invited members
-    var invitees = await wrap.getInvitedMembers(argv.o, team.slug, team.id);
+    var invitees = await wrap.getInvitedMembers(argv.o, team);
     if (invitees != null) {
       s = [];
       for (var invitee in invitees) {
