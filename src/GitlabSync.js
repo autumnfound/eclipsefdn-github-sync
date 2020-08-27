@@ -25,7 +25,6 @@ var argv = require('yargs')
   .option('s', {
     alias: 'secretLocation',
     description: 'The location of the access-token file containing an API access token',
-    default: '/run/secrets',
   })
   .help('h')
   .alias('h', 'help')
@@ -35,7 +34,7 @@ var argv = require('yargs')
   .argv;
 
 const uuid = require('uuid');
-const fs = require('fs');
+const { SecretReader, getBaseConfig } = require('./SecretReader.js');
 
 const { Gitlab } = require('gitlab');
 const EclipseAPI = require('./EclipseAPI.js');
@@ -60,23 +59,26 @@ _prepareSecret();
 function _prepareSecret() {
   // retrieve the secret API token
   var accessToken, eclipseToken;
-
-  var data = fs.readFileSync(argv.s + '/access-token', { encoding: 'utf-8' });
-  if (data != undefined) {
+  // retrieve the secret API file root if set
+  var settings = getBaseConfig();
+  if (argv.s !== undefined) {
+    settings.root = argv.s;
+  }
+  var reader = new SecretReader(settings);
+  var data = reader.readSecret('access-token');
+  if (data !== null) {
     accessToken = data.trim();
+    // retrieve the Eclipse API token (needed for emails)
+    data = reader.readSecret('eclipse-oauth-config');
+    if (data !== null) {
+      eclipseToken = data.trim();
+      run(accessToken, eclipseToken);
+    } else {
+      console.log('Could not find the Eclipse OAuth config, exiting');
+    }
   } else {
-    console.log('Error while reading access token');
-    return;
+    console.log('Could not find the GitLab access token, exiting');
   }
-  // retrieve the Eclipse API token (needed for emails)
-  data = fs.readFileSync(argv.s + '/eclipse-oauth-config', { encoding: 'utf-8' });
-  if (data != undefined) {
-    eclipseToken = data.trim();
-  } else {
-    console.log('Error while reading Eclipse OAuth config');
-    return;
-  }
-  run(accessToken, eclipseToken);
 }
 
 async function run(secret, eclipseToken) {
