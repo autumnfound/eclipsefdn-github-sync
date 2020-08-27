@@ -33,6 +33,10 @@ var argv = require('yargs')
     description: 'Runs the script in a semi-dryrun state to prevent deletions of users',
     boolean: true,
   })
+  .option('s', {
+    alias: 'secretLocation',
+    description: 'The location of the access-token file containing an API access token',
+  })
   .help('h')
   .alias('h', 'help')
   .version('0.1')
@@ -41,7 +45,7 @@ var argv = require('yargs')
   .argv;
 
 const axios = require('axios');
-const fs = require('fs');
+const { SecretReader, getBaseConfig } = require('./SecretReader.js');
 const parse = require('parse-link-header');
 const defaultOrgPermissions = {
   default_repository_permission: 'read',
@@ -69,15 +73,17 @@ _prepareSecret();
  * @returns
  */
 function _prepareSecret() {
-  // retrieve the secret API token
-  fs.readFile('/run/secrets/api-token', { encoding: 'utf-8' }, function(err, data) {
-    if (!err && data != undefined) {
-      _init(data.trim());
-    } else {
-      console.log('Error while reading access token: ' + err);
-      return;
-    }
-  });
+  // retrieve the secret API file root if set
+  var settings = getBaseConfig();
+  if (argv.s !== undefined) {
+    settings.root = argv.s;
+  }
+  var reader = new SecretReader(settings);
+  // get the secret and start the script if set
+  var secret = reader.readSecret('api-token');
+  if (secret !== null) {
+    _init(secret.trim());
+  }
 }
 
 /**
@@ -95,6 +101,7 @@ async function _init(secret) {
     return;
   }
   wrap.setDryRun(argv.d);
+  wrap.setVerbose(argv.V);
   console.log(`Running in dryrun? ${argv.d}`);
 
   cHttp = new CachedHttp();
