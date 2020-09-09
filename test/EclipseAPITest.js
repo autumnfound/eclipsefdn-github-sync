@@ -10,8 +10,8 @@ describe('EclipseAPI', function() {
 		describe('success', function() {
 			var result;
 			before(async function() {
-				// get eclipse projects
-				result = await EclipseAPI.eclipseAPI();
+				// get eclipse projects, disable pagination as this is a long process
+				result = await EclipseAPI.eclipseAPI(false);
 			});
 
 			it('should contain JSON data', function() {
@@ -22,11 +22,16 @@ describe('EclipseAPI', function() {
 					expect(result[0]).to.have.property('project_id').that.is.a('string');
 				}
 			});
-			it('should contain github_repos field', function() {
-				if (result.length > 0) {
-					expect(result[0]).to.have.property('github_repos').that.is.an('array');
-				}
-			});
+      it('should contain github_repos field', function() {
+        if (result.length > 0) {
+          expect(result[0]).to.have.property('github_repos').that.is.an('array');
+        }
+      });
+      it('should contain gitlab_repos field', function() {
+        if (result.length > 0) {
+          expect(result[0]).to.have.property('gitlab_repos').that.is.an('array');
+        }
+      });
 		});
 	});
 	
@@ -149,7 +154,7 @@ describe('EclipseAPI', function() {
 				}
 				
 				// get bots with filtered list
-				result = await EclipseAPI.processBots(bots, siteName);
+				result = EclipseAPI.processBots(bots, siteName);
 			});
 
 			it('should contain object data', function() {
