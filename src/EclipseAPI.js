@@ -25,14 +25,14 @@ module.exports = class EclipseAPI {
     }
   }
 
-  async eclipseAPI() {
+  async eclipseAPI(paginate = true) {
     var hasMore = true;
     var result = [];
     var data = [];
     // add timestamp to url to avoid browser caching
     var url = 'https://projects.eclipse.org/api/projects';
     // loop through all available users, and add them to a list to be returned
-    while (hasMore) {
+    while (hasMore && paginate) {
       console.log('Loading next page...');
       // get the current page of results, incrementing page count after call
       result = await axios.get(url).then(r => {
