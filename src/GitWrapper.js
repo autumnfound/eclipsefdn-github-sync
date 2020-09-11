@@ -188,6 +188,36 @@ module.exports = class {
     }
   }
 
+  async removeTeam(org, teamName) {
+    if (this.#verbose === true) {
+      console.log(`removeTeam(org = ${org}, teamName = ${teamName})`);
+    }
+    if (!org || !teamName) {
+      console.log('removeTeam command requires organization and teamName to be set');
+      return;
+    }
+    var sanitizedTeam = sanitizeTeamName(teamName);
+    // call the API to get additional information about the team
+    var teamData = await getTeam(org, sanitizedTeam);
+    // check if data was returned
+    if (teamData == null) {
+      return;
+    }
+
+    // if not set to dryrun, add repo to team in given org
+    if (!this.#dryrun) {
+      callCount++;
+      return octokit.teams.deleteInOrg({
+        org: org,
+        team_slug: teamData.slug,
+      }).then(result => {
+        console.log(`Done removing team: ${org}/${sanitizedTeam}`);
+      }).catch(err => logError(err, 'team:deleteInOrg'));
+    } else {
+      console.log(`Dry run set, not removing team ${org}/${sanitizedTeam}`);
+    }
+  }
+
   /**
    * Invites user with username of 'uname' to the given team in given
    * organization. Checks current member list to see if user should be
