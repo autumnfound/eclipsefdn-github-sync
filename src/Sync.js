@@ -44,17 +44,22 @@ var argv = require('yargs')
   .epilog('Copyright 2019 Eclipse Foundation inc.')
   .argv;
 
-const axios = require('axios');
-const { SecretReader, getBaseConfig } = require('./SecretReader.js');
-const { StaticTeamManager, ServiceTypes } = require('./teams/StaticTeamManager.js');
-const parse = require('parse-link-header');
-const defaultOrgPermissions = {
+const DEFAULT_ORG_PERMISSIONS = {
   default_repository_permission: 'read',
   members_can_create_repositories: false,
   members_can_create_private_repositories: false,
   members_can_create_public_repositories: false,
   members_allowed_repository_creation_type: 'none',
 };
+const MB_IN_BYTES = 1024;
+const DEFAULT_WAIT_PERIOD_IN_MS = 500;
+const API_OK_STATUS = 200;
+const EXIT_ERROR_STATE = 1;
+
+const axios = require('axios');
+const { SecretReader, getBaseConfig } = require('./SecretReader.js');
+const { StaticTeamManager, ServiceTypes } = require('./teams/StaticTeamManager.js');
+const parse = require('parse-link-header');
 
 // create global placeholder for wrapper
 var wrap;
@@ -63,9 +68,9 @@ var bots;
 var stm;
 
 // thread sleeping to prevent abuse of API
-var sab = new SharedArrayBuffer(1024);
+var sab = new SharedArrayBuffer(MB_IN_BYTES);
 var int32 = new Int32Array(sab);
-const waitTimeInMS = 500;
+const waitTimeInMS = DEFAULT_WAIT_PERIOD_IN_MS;
 
 _prepareSecret();
 
@@ -93,7 +98,7 @@ function _prepareSecret() {
  * starts.
  */
 async function _init(secret) {
-  if (secret == undefined || secret == '') {
+  if (secret === undefined || secret === '') {
     console.log('Could not fetch API secret, exiting');
     return;
   }
@@ -121,7 +126,7 @@ async function _init(secret) {
     result = await axios.get(url).then(r => {
       // return the data to the user
       var links = parse(r.headers.link);
-      if (links.self.url == links.last.url) {
+      if (links.self.url === links.last.url) {
         hasMore = false;
       } else {
         url = links.next.url;
@@ -130,7 +135,7 @@ async function _init(secret) {
     }).catch(err => console.log(`Error while retrieving results from Eclipse Projects API (${url}): ${err}`));
 
     // collect the results
-    if (result != null && result.length > 0) {
+    if (result !== undefined && result.length > 0) {
       for (var i = 0; i < result.length; i++) {
         data.push(result[i]);
       }
@@ -163,9 +168,9 @@ function postprocessData(data) {
       var repoUrl = repo.url;
       console.log(`Checking repo URL: ${repoUrl}`);
       // strip the repo url to get the org + repo
-      var match = /\/([^\/]+)\/([^\/]+)\/?$/.exec(repoUrl);
+      var match = /\/([^/]+)\/([^/]+)\/?$/.exec(repoUrl);
       // check to make sure we got a match
-      if (match == null) {
+      if (match === null) {
         continue;
       }
 
@@ -175,10 +180,10 @@ function postprocessData(data) {
       // set the computed data back to the objects
       repo.org = org;
       repo.repo = repoName;
-      if (project.pp_orgs.indexOf(org) == -1) {
+      if (project.pp_orgs.indexOf(org) === -1) {
         project.pp_orgs.push(org);
       }
-      if (project.pp_repos.indexOf(repoName) == -1) {
+      if (project.pp_repos.indexOf(repoName) === -1) {
         project.pp_repos.push(repoName);
       }
     }
@@ -269,7 +274,7 @@ async function processStaticTeam(team) {
   console.log(`Processing static team ${team.name}`);
   for (var rIdx in team.repos) {
     var repoURL = team.repos[rIdx];
-    var match = /\/([^\/]+)\/([^\/]+)\/?$/.exec(repoURL);
+    var match = /\/([^/]+)\/([^/]+)\/?$/.exec(repoURL);
     // check to make sure we got a match
     if (match == null) {
       console.log(`Cannot match repo and org from repo URL ${repoURL}, skipping`);
@@ -318,7 +323,7 @@ async function processProjectsOrg(org, project) {
 
   // create the teams for the current org + update perms
   if (!argv.d) {
-    await wrap.updateOrgPermissions(org, defaultOrgPermissions);
+    await wrap.updateOrgPermissions(org, DEFAULT_ORG_PERMISSIONS);
     await updateProjectTeam(org, project, 'contributors');
     await updateProjectTeam(org, project, 'committers');
     await updateProjectTeam(org, project, 'project_leads');
@@ -367,12 +372,12 @@ async function updateTeam(org, teamName, designatedMembers) {
     }
     // get the user via cached HTTP
     var userRequest = await cHttp.getRaw(designatedMembers[idx].url);
-    if (userRequest.response != undefined && userRequest.response.data == 'User not found.') {
+    if (userRequest.response !== undefined && userRequest.response.data === 'User not found.') {
       console.log(`User '${designatedMembers[idx].name}' had no associated data on Eclipse API`);
       continue;
-    } else if (userRequest.status != 200) {
+    } else if (userRequest.status !== API_OK_STATUS) {
       console.log(`Error while fetching data for ${designatedMembers[idx].url}, ending all processing`);
-      process.exit(1);
+      process.exit(EXIT_ERROR_STATE);
     }
     var user = userRequest.data;
     // check if github handle is null or empty
@@ -383,7 +388,7 @@ async function updateTeam(org, teamName, designatedMembers) {
 
     // invite user to team
     await wrap.inviteUserToTeam(org, teamName, user.github_handle);
-    if (members != undefined) {
+    if (members !== undefined) {
       members = members.filter(e => e.login !== user.github_handle);
     }
     // wait to make sure that we don't abuse GitHub API
@@ -393,14 +398,14 @@ async function updateTeam(org, teamName, designatedMembers) {
   console.log(`Leftover members: ${JSON.stringify(members)}`);
   // Commented out until Eclipse API endpoint exists to get user for github
   // handle
-  if (members != undefined) {
+  if (members !== undefined) {
     for (var i = 0; i < members.length; i++) {
       var url = `https://api.eclipse.org/github/profile/${members[i].login}`;
       var r = await axios.get(url).then(result => {
         return result.data;
       }).catch(err => console.log(`Received error from Eclipse API querying for '${url}': ${err}`));
       // check that we know the user before removing
-      if (r != undefined && r['github_handle'] === members[i].login) {
+      if (r !== undefined && r['github_handle'] === members[i].login) {
         if (argv.D !== true) {
           console.log(`Removing '${members[i].login}' from team '${teamName}'`);
           await wrap.removeUserFromTeam(org, teamName, members[i].login);
@@ -418,12 +423,12 @@ async function removeRepoExternalContributors(project, org, repo) {
   // get the collaborators
   var collaborators = await wrap.getRepoCollaborators(org, repo);
   Atomics.wait(int32, 0, 0, waitTimeInMS);
-  if (collaborators == undefined) {
+  if (collaborators === undefined) {
     console.log(`Error while fetching collaborators for ${org}/${repo}`);
     return;
   }
   // check if we have collaborators to process
-  if (collaborators.length == 0) {
+  if (collaborators.length === 0) {
     return;
   }
 
@@ -431,12 +436,12 @@ async function removeRepoExternalContributors(project, org, repo) {
   for (var collabIdx in collaborators) {
     var uname = collaborators[collabIdx].login;
     // skip webmaster
-    if (uname == 'eclipsewebmaster') {
+    if (uname === 'eclipsewebmaster') {
       continue;
     }
 
     // get the bots for the current project
-    if (projBots != undefined && projBots.indexOf(uname) != -1) {
+    if (projBots !== undefined && projBots.indexOf(uname) !== -1) {
       console.log(`Keeping ${uname} as it was detected to be a bot for ${org}/${repo}`);
       continue;
     }
@@ -452,7 +457,7 @@ async function removeRepoExternalContributors(project, org, repo) {
       var isProjectLead = false;
       for (var plIdx in project['project_leads']) {
         var projectLead = project['project_leads'][plIdx];
-        if (projectLead.username == eclipseUserName) {
+        if (projectLead.username === eclipseUserName) {
           isProjectLead = true;
           break;
         }
@@ -477,12 +482,12 @@ async function removeOrgExternalContributors(projects, org) {
   // get the collaborators
   var collaborators = await wrap.getOrgCollaborators(org);
   Atomics.wait(int32, 0, 0, waitTimeInMS);
-  if (collaborators == undefined) {
+  if (collaborators === undefined) {
     console.log(`Error while fetching collaborators for ${org}`);
     return;
   }
   // check if we have collaborators to process
-  if (collaborators.length == 0) {
+  if (collaborators.length === 0) {
     return;
   }
   // check each of the collaborators, removing them if they arent a bot for a
@@ -496,7 +501,7 @@ async function removeOrgExternalContributors(projects, org) {
     for (var botIdx in botKeys) {
       var botList = bots[botKeys[botIdx]];
       // check if the current user is in the current key-values list
-      if (botList.indexOf(uname) != -1) {
+      if (botList.indexOf(uname) !== -1) {
         console.log(`Found user '${uname}' in bot list for project '${botKeys[botIdx]}', checking organizations`);
         // if we can determine that this user could be a bot, check that its
         // valid for current org
@@ -504,7 +509,7 @@ async function removeOrgExternalContributors(projects, org) {
           var project = projects[pIdx];
           // check if our project ID is the ID associated with bot
           // and if the project has repositories within the given org
-          if (project.project_id == botKeys[botIdx] && project.pp_orgs.indexOf(org) != -1) {
+          if (project.project_id === botKeys[botIdx] && project.pp_orgs.indexOf(org) !== -1) {
             isBot = true;
             console.log(`Discovered bot account for '${botKeys[botIdx]}' in org ${org}`);
             break;
@@ -534,9 +539,9 @@ async function removeOrgExternalContributors(projects, org) {
 
 async function eclipseBots() {
   var botsRaw = await cHttp.getData('https://api.eclipse.org/bots');
-  if (botsRaw == undefined) {
+  if (botsRaw === undefined) {
     console.log('Could not retrieve bots from API');
-    process.exit(1);
+    process.exit(EXIT_ERROR_STATE);
   }
   return botsRaw;
 }
@@ -545,10 +550,11 @@ function processBots(botsRaw) {
   var botMap = {};
   for (var botIdx in botsRaw) {
     var bot = botsRaw[botIdx];
-    if (bot['github.com'] == undefined) continue;
-
+    if (bot['github.com'] === undefined) {
+      continue;
+    }
     var projBots = botMap[bot['projectId']];
-    if (projBots == undefined) {
+    if (projBots === undefined) {
       projBots = [];
     }
     projBots.push(bot['github.com']['username']);
