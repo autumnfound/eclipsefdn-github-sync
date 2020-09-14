@@ -10,11 +10,6 @@
  * SPDX-License-Identifier: EPL-2.0
  ******************************************************************************/
 
-// custom wrappers
-const Wrapper = require('../GitWrapper.js');
-const CachedHttp = require('../HttpWrapper.js');
-const axios = require('axios');
-const parse = require('parse-link-header');
 // set up yargs command line parsing
 var argv = require('yargs')
   .usage('Usage: $0 [options]')
@@ -36,13 +31,19 @@ var argv = require('yargs')
   .epilog('Copyright 2019 Eclipse Foundation inc.')
   .argv;
 
-var readline = require('readline');
+const MB_IN_BYTES = 1024;
+// custom wrappers
+const Wrapper = require('../GitWrapper.js');
+const CachedHttp = require('../HttpWrapper.js');
+const axios = require('axios');
+const parse = require('parse-link-header');
+const readline = require('readline');
 // create global placeholder for wrapper
 var wrap;
 var cHttp;
 
 // thread sleeping to prevent abuse of API
-var sab = new SharedArrayBuffer(1024);
+var sab = new SharedArrayBuffer(MB_IN_BYTES);
 var int32 = new Int32Array(sab);
 // fields desired for report
 var fields = [
@@ -67,14 +68,14 @@ var rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
+rl.question('Please enter your GitHub access token: ', answer => acceptInput(answer));
 
 // best attempt at basic input checking
 function acceptInput(answer) {
   var secret = answer.trim();
-  if (!secret || secret.length == 0) {
+  if (!secret || secret.length === 0) {
     console.log('A token is required to run sync functionality, please try again');
-    return rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
+    return rl.question('Please enter your GitHub access token: ', answer => acceptInput(answer));
   }
 
   rl.close();
@@ -82,7 +83,7 @@ function acceptInput(answer) {
 }
 
 async function run(secret) {
-  if (secret == undefined || secret == '') {
+  if (secret === undefined || secret === '') {
     console.log('Could not fetch API secret, exiting');
     return;
   }
@@ -100,7 +101,7 @@ async function run(secret) {
     var org = keys[idx];
     var orgActual = await wrap.getOrganization(org);
     wait();
-    if (orgActual == undefined) {
+    if (orgActual === undefined) {
       console.log(`Error retrieving org '${org}', will skip`);
       continue;
     }
@@ -119,7 +120,7 @@ async function run(secret) {
     await wrap.prefetchTeams(org);
     wait();
     // get copy of all found repos for org
-    var repos = await wrap.getDiscoveredRepos(org);
+    var repos = wrap.getDiscoveredRepos(org);
     wait();
 
     for (var rIdx in repos) {
@@ -144,7 +145,7 @@ async function run(secret) {
       wait();
       for (var cIdx in collabs) {
         var collaborator = collabs[cIdx];
-        if (collaborator.permissions.admin == true && !allowedAdmins.includes(collaborator.login)) {
+        if (collaborator.permissions.admin === true && !allowedAdmins.includes(collaborator.login)) {
           console.log(`Repo ${org}/${foundRepo.name} has invalid admin of ${collaborator.login}`);
           hasInvalidAdmin = true;
         }
@@ -190,7 +191,7 @@ async function eclipseAPI() {
   var result = [];
   var data = [];
   // add timestamp to url to avoid browser caching
-  var url = `https://projects.eclipse.org/api/projects?github_only=1&timestamp=${new Date().getTime()}`;
+  var url = 'https://projects.eclipse.org/api/projects?github_only=1';
   // loop through all available users, and add them to a list to be returned
   while (hasMore) {
     console.log('Loading next page...');
@@ -198,7 +199,7 @@ async function eclipseAPI() {
     result = await axios.get(url).then(result => {
       // return the data to the user
       var links = parse(result.headers.link);
-      if (links.self.url == links.last.url) {
+      if (links.self.url === links.last.url) {
         hasMore = false;
       } else {
         url = links.next.url;
@@ -207,7 +208,7 @@ async function eclipseAPI() {
     }).catch(err => console.log('Error while loading EclipseAPI data: ' + err));
 
     // collect the results
-    if (result != null && result.length > 0) {
+    if (result !== undefined && result.length > 0) {
       for (var i = 0; i < result.length; i++) {
         data.push(result[i]);
       }
@@ -227,16 +228,16 @@ function retrieveMaintainedOrgRepos(data) {
     for (var idx in repos) {
       var repoUrl = repos[idx].url;
       // strip the repo url to get the org + repo
-      var match = /\/([^\/]+)\/([^\/]+)\/?$/.exec(repoUrl);
+      var match = /\/([^/]+)\/([^/]+)\/?$/.exec(repoUrl);
       // check to make sure we got a match
-      if (match == null) {
+      if (match === null) {
         continue;
       }
 
       // get the org from the repo URL
       var org = match[1];
       var repo = match[2];
-      if (orgs[org] == undefined) {
+      if (orgs[org] === undefined) {
         orgs[org] = [];
       }
       if (!orgs[org].includes(repo)) {

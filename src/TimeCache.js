@@ -16,7 +16,8 @@
 
  The aforementioned file forms the base in which this class was implemented.
  ****************************************************************************/
-
+const MILLIS_IN_SECOND = 1000;
+const SECONDS_IN_MINUTE = 60;
 const flatCache = require('flat-cache');
 
 module.exports = class {
@@ -24,7 +25,7 @@ module.exports = class {
   #expire;
   constructor(name, path, cacheTime = 0) {
     this.#cache = flatCache.load(name, path);
-    this.#expire = cacheTime === 0 ? false : cacheTime * 1000 * 60;
+    this.#expire = cacheTime === 0 ? false : cacheTime * MILLIS_IN_SECOND * SECONDS_IN_MINUTE;
   }
   getKey(key) {
     var now = new Date().getTime();
@@ -34,7 +35,7 @@ module.exports = class {
     } else {
       return value.data;
     }
-  };
+  }
 
   setKey(key, value) {
     var now = new Date().getTime();
@@ -42,7 +43,7 @@ module.exports = class {
       expire: this.#expire === false ? false : now + this.#expire,
       data: value,
     });
-  };
+  }
 
   save(prune = false) {
     if (prune === true) {
@@ -55,5 +56,5 @@ module.exports = class {
       }
     }
     this.#cache.save(true);
-  };
+  }
 };

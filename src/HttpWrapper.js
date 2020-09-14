@@ -10,15 +10,16 @@
 
  SPDX-License-Identifier: EPL-2.0
 ******************************************************************/
+// default cache time of 2 hours
+const DEFAULT_CACHE_TIME = 120;
 
 const axios = require('axios');
-
 const TimeCache = require('./TimeCache.js');
 
 // variables for use with the cache
 const httpCacheID = 'http.cache';
 const cacheLoc = './.cache';
-let httpCache = new TimeCache(httpCacheID, cacheLoc, 120);
+let httpCache = new TimeCache(httpCacheID, cacheLoc, DEFAULT_CACHE_TIME);
 
 module.exports = function() {
   this.getData = function(url) {

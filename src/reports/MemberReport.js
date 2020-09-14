@@ -9,15 +9,6 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ******************************************************************************/
-
-// custom wrappers
-const Wrapper = require('../GitWrapper.js');
-const CachedHttp = require('../HttpWrapper.js');
-const axios = require('axios');
-const parse = require('parse-link-header');
-
-var readline = require('readline');
-
 // set up yargs command line parsing
 var argv = require('yargs')
   .usage('Usage: $0 [options]')
@@ -39,28 +30,40 @@ var argv = require('yargs')
   .epilog('Copyright 2019 Eclipse Foundation inc.')
   .argv;
 
+const MB_IN_BYTES = 1024;
+const DEFAULT_WAIT_PERIOD_IN_MS = 500;
+const SPLICE_CURRENT_ENTRY_ONLY = 1;
+const SUBSTRING_SECOND_LAST_CHARACTER_TARGET = 2;
+
+// custom wrappers
+const Wrapper = require('../GitWrapper.js');
+const CachedHttp = require('../HttpWrapper.js');
+const axios = require('axios');
+const parse = require('parse-link-header');
+var readline = require('readline');
+
 // create global placeholder for wrapper
 var wrap;
 var cHttp;
 
 // thread sleeping to prevent abuse of API
-var sab = new SharedArrayBuffer(1024);
+var sab = new SharedArrayBuffer(MB_IN_BYTES);
 var int32 = new Int32Array(sab);
-const waitTimeInMS = 500;
+const waitTimeInMS = DEFAULT_WAIT_PERIOD_IN_MS;
 
 // read in secret from command line
 var rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
+rl.question('Please enter your GitHub access token: ', answer => acceptInput(answer));
 
 // best attempt at basic input checking
 function acceptInput(answer) {
   var secret = answer.trim();
-  if (!secret || secret.length == 0) {
+  if (!secret || secret.length === 0) {
     console.log('A token is required to run sync functionality, please try again');
-    return rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
+    return rl.question('Please enter your GitHub access token: ', answer => acceptInput(answer));
   }
 
   rl.close();
@@ -68,7 +71,7 @@ function acceptInput(answer) {
 }
 
 async function run(secret) {
-  if (secret == undefined || secret == '') {
+  if (secret === undefined || secret === '') {
     console.log('Could not fetch API secret, exiting');
     return;
   }
@@ -109,7 +112,7 @@ async function run(secret) {
 
     // generate rows for untracked invited members
     var invitees = await wrap.getInvitedMembers(argv.o, team);
-    if (invitees != null) {
+    if (invitees !== null && invitees.length > 0) {
       s = [];
       for (var invitee in invitees) {
         s.push(invitees[invitee].login.toLowerCase());
@@ -145,7 +148,7 @@ async function removeTrackedUsers(currMembers, trackedMembers, team) {
     var repoName = rs[repoIdx]['name'];
     console.log(`Checking repo '${repoName}'`);
     var allowedUsers = trackedMembers[repoName];
-    if (allowedUsers == null) {
+    if (allowedUsers === undefined) {
       continue;
     }
     // iterate over users
@@ -156,7 +159,7 @@ async function removeTrackedUsers(currMembers, trackedMembers, team) {
       // remove user if it was found
       if (teamUserIdx > -1) {
         console.log(`Found tracked user ${currMembers[teamUserIdx]}, removing!`);
-        currMembers.splice(teamUserIdx, 1);
+        currMembers.splice(teamUserIdx, SPLICE_CURRENT_ENTRY_ONLY);
         console.log(`New list: ${currMembers}`);
       }
     }
@@ -177,7 +180,7 @@ async function generateDataRows(currMembers, teamName, org, invited = false) {
       github: currMembers[memberIdx],
       team: teamName,
       org: org,
-      uname: !result || result.name == null ? '' : result.name,
+      uname: !result || result.name === undefined ? '' : result.name,
       invited: invited,
     });
   }
@@ -189,7 +192,7 @@ async function eclipseAPI() {
   var result = [];
   var data = [];
   // add timestamp to url to avoid browser caching
-  var url = `https://projects.eclipse.org/api/projects?github_only=1&timestamp=${new Date().getTime()}`;
+  var url = 'https://projects.eclipse.org/api/projects?github_only=1';
   // loop through all available users, and add them to a list to be returned
   while (hasMore) {
     console.log('Loading next page...');
@@ -197,7 +200,7 @@ async function eclipseAPI() {
     result = await axios.get(url).then(r => {
       // return the data to the user
       var links = parse(r.headers.link);
-      if (links.self.url == links.last.url) {
+      if (links.self.url === links.last.url) {
         hasMore = false;
       } else {
         url = links.next.url;
@@ -230,7 +233,7 @@ async function mapRepoToUsers(data, org) {
       // get the repos for each of the projects
       var repos = getReposFromProject(proj, grouping, org);
       // stop processing if we don't have any valid repos
-      if (repos.length == 0) {
+      if (repos.length === 0) {
         console.log(`No repositories found for grouping '${grouping}' in project '${proj.project_id}'`);
         continue;
       }
@@ -274,20 +277,21 @@ function getReposFromProject(proj, grouping, org) {
   for (var l in proj['github_repos']) {
     // get repo url for current project
     var gitUrl = proj['github_repos'][l]['url'];
-    var match = /\/([^\/]*)\/([^\/]*\/?)$/.exec(gitUrl);
-    if (match == undefined) {
+    var match = /\/([^/]*)\/([^/]*\/?)$/.exec(gitUrl);
+    if (match === null) {
       continue;
     }
 
     // get the org + repo from the repo URL
     var orgName = match[1];
-    if (orgName != org) {
+    if (orgName !== org) {
       console.log(`Skipping repo URL as its org (${orgName}) doesn't match expected org of '${org}': '${gitUrl}'`);
       continue;
     }
     var repoName = match[2];
     if (repoName.endsWith('/')) {
-      repoName = repoName.substring(0, repoName.length - 2);
+      var repoNameSlashIdx = repoName.length - SUBSTRING_SECOND_LAST_CHARACTER_TARGET;
+      repoName = repoName.substring(0, repoNameSlashIdx);
     }
 
     // retain the repo name

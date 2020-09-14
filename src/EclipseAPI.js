@@ -1,3 +1,6 @@
+const HOUR_IN_SECONDS = 3600;
+const EXIT_ERROR_STATE = 1;
+
 const axios = require('axios');
 const parse = require('parse-link-header');
 const { ClientCredentials } = require('simple-oauth2');
@@ -9,7 +12,7 @@ module.exports = class EclipseAPI {
   constructor(config = {}) {
     this.#config = config;
     // if we have oauth config, intialize access token
-    if (this.#config.oauth != undefined) {
+    if (this.#config.oauth !== undefined) {
       const oauth = {
         client: {
           id: this.#config.oauth.client_id,
@@ -38,7 +41,7 @@ module.exports = class EclipseAPI {
       result = await axios.get(url).then(r => {
         // return the data to the user
         var links = parse(r.headers.link);
-        if (links.self.url == links.last.url) {
+        if (links.self.url === links.last.url) {
           hasMore = false;
         } else {
           url = links.next.url;
@@ -54,7 +57,7 @@ module.exports = class EclipseAPI {
       }
     }
     return data;
-  };
+  }
 
   postprocessEclipseData(data, param) {
     for (var key in data) {
@@ -63,7 +66,7 @@ module.exports = class EclipseAPI {
       project.pp_repos = [];
       project.pp_orgs = [];
       var repos = project[param];
-      if (repos.length == 0) {
+      if (repos.length === 0) {
         delete data[key];
         continue;
       }
@@ -73,9 +76,9 @@ module.exports = class EclipseAPI {
 
         console.log(`Checking repo URL: ${repoUrl}`);
         // strip the repo url to get the org + repo
-        var match = /.*\/([^\/]+)\/([^\/]+)\/?$/.exec(repoUrl);
+        var match = /.*\/([^/]+)\/([^/]+)\/?$/.exec(repoUrl);
         // check to make sure we got a match
-        if (match == null) {
+        if (match === null) {
           console.log(`No match for URL ${repoUrl}`);
           continue;
         }
@@ -86,11 +89,11 @@ module.exports = class EclipseAPI {
         // set the computed data back to the objects
         repo.org = org;
         repo.repo = repoName;
-        if (project.pp_orgs.indexOf(org) == -1) {
+        if (project.pp_orgs.indexOf(org) === -1) {
           console.log(`Found new match, registered org=${org}`);
           project.pp_orgs.push(org);
         }
-        if (project.pp_repos.indexOf(repoName) == -1) {
+        if (project.pp_repos.indexOf(repoName) === -1) {
           console.log(`Found match, registered repo=${repoName}`);
           project.pp_repos.push(repoName);
         }
@@ -99,7 +102,7 @@ module.exports = class EclipseAPI {
       data[key] = project;
     }
     return data;
-  };
+  }
 
   async eclipseUser(username) {
     return await axios.get('https://api.eclipse.org/account/profile/' + username, {
@@ -109,15 +112,15 @@ module.exports = class EclipseAPI {
     })
       .then(result => result.data)
       .catch(err => console.log(err));
-  };
+  }
 
   async eclipseBots() {
     var botsRaw = await axios.get('https://api.eclipse.org/bots')
       .then(result => result.data)
       .catch(err => console.log(err));
-    if (botsRaw == undefined) {
+    if (botsRaw === undefined || botsRaw.length <= 0) {
       console.log('Could not retrieve bots from API');
-      process.exit(1);
+      process.exit(EXIT_ERROR_STATE);
     }
     return botsRaw;
   }
@@ -126,27 +129,27 @@ module.exports = class EclipseAPI {
     var botMap = {};
     for (var botIdx in botsRaw) {
       var bot = botsRaw[botIdx];
-      if (bot[site] == undefined) continue;
+      if (bot[site] === undefined) continue;
 
       var projBots = botMap[bot['projectId']];
-      if (projBots == undefined) {
+      if (projBots === undefined) {
         projBots = [];
       }
       projBots.push(bot[site]['username']);
       botMap[bot['projectId']] = projBots;
     }
     return botMap;
-  };
+  }
 
   async _getAccessToken() {
-    if (this.#accessToken == undefined || this.#accessToken.expired(this.#config.oauth.timeout | 3600)) {
+    if (this.#accessToken === undefined || this.#accessToken.expired(this.#config.oauth.timeout | HOUR_IN_SECONDS)) {
       try {
         this.#accessToken = await this.#client.getToken({
           scope: this.#config.oauth.scope,
         });
       } catch (error) {
         console.log('Access Token error', error);
-        process.exit(1);
+        process.exit(EXIT_ERROR_STATE);
       }
       return this.#accessToken.token.access_token;
     }

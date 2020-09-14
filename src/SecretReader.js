@@ -64,7 +64,7 @@ class SecretReader {
  */
 function getBaseConfig(){
   return JSON.parse(JSON.stringify(baseConfig));
-};
+}
 
 
 module.exports.SecretReader = SecretReader;
