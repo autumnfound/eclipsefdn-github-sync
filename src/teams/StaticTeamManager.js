@@ -1,4 +1,21 @@
+/** **************************************************************
+ Copyright (C) 2020 Eclipse Foundation, Inc.
 
+ This program and the accompanying materials are made
+ available under the terms of the Eclipse Public License 2.0
+ which is available at https://www.eclipse.org/legal/epl-2.0/
+
+  Contributors:
+    Martin Lowe <martin.lowe@eclipse-foundation.org>
+
+ SPDX-License-Identifier: EPL-2.0
+******************************************************************/
+/* 
+   Note: teams should not be removed from the static file until they
+   have been removed manually or expired and automatically deleted.
+   Otherwise, they will become orphan teams that are no longer managed
+   by the script.
+*/
 const teamData = require('./static.json');
 
 const ServiceTypes = {
@@ -31,6 +48,13 @@ const PermissionsEnum = {
   MAINTAINER: function(serviceType) {
     if (serviceType === ServiceTypes.GITHUB) {
       return 'maintain';
+    } else if (serviceType === ServiceTypes.GITLAB) {
+      return '40';
+    }
+  },
+  ADMIN: function(serviceType) {
+    if (serviceType === ServiceTypes.GITHUB) {
+      return 'admin';
     } else if (serviceType === ServiceTypes.GITLAB) {
       return '40';
     }
@@ -122,9 +146,9 @@ class StaticTeamManager {
 
   checkRepoForServiceType(repo, serviceType) {
     if (serviceType === ServiceTypes.GITHUB) {
-      return (/^(https:\/\/)?github.com\/.*$/).test(repo);
+      return (/^(https:\/\/)?(www.)?github.com\/.*$/).test(repo);
     } else if (serviceType === ServiceTypes.GITLAB) {
-      return (/^(https:\/\/)?gitlab.eclipse.org\/.*$/).test(repo);
+      return (/^(https:\/\/)?(www.)?gitlab.eclipse.org\/.*$/).test(repo);
     }
     return false;
   }
