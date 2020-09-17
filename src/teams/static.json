@@ -117,7 +117,7 @@
 				"expiration": ""
 			}
 		],
-		"permission": "WRITE",
+		"permission": "TRIAGE",
 		"expiration": ""
 	}
 ]
