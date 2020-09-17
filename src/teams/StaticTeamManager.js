@@ -10,7 +10,7 @@
 
  SPDX-License-Identifier: EPL-2.0
 ******************************************************************/
-/* 
+/*
    Note: teams should not be removed from the static file until they
    have been removed manually or expired and automatically deleted.
    Otherwise, they will become orphan teams that are no longer managed
