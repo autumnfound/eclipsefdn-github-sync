@@ -16,14 +16,14 @@ const DEFAULT_WAIT_PERIOD_IN_MS = 333;
 // custom wrappers
 const Wrapper = require('../GitWrapper.js');
 const CachedHttp = require('../HttpWrapper.js');
-const axios = require('axios');
-const parse = require('parse-link-header');
+const EclipseAPI = require('../EclipseAPI.js');
 
 var readline = require('readline');
 
 // create global placeholder for wrapper
 var wrap;
 var cHttp;
+var eclipseApi;
 
 var bots;
 
@@ -60,13 +60,14 @@ async function run(secret) {
   // build wrapper
   wrap = new Wrapper(secret);
   cHttp = new CachedHttp();
+  eclipseApi = new EclipseAPI();
 
   // get eclipse api data
-  var rawData = await eclipseAPI();
-  var rawBots = await eclipseBots();
+  var rawData = await eclipseApi.eclipseAPI();
+  var rawBots = await eclipseApi.eclipseBots();
 
   var data = retrieveMaintainedOrgsRepos(rawData);
-  bots = processBots(rawBots);
+  bots = eclipseApi.processBots(rawBots);
 
   var auditNotes = [];
   var projects = Object.keys(data);
@@ -174,63 +175,6 @@ async function generateDataRow(collaborator, projectId, org, repo) {
   } else {
     console.log(`'${uname}' was a bot for ${org}/${repo}`);
   }
-}
-
-async function eclipseAPI() {
-  var hasMore = true;
-  var result = [];
-  var data = [];
-  // add timestamp to url to avoid browser caching
-  var url = `https://projects.eclipse.org/api/projects?github_only=1&timestamp=${new Date().getTime()}`;
-  // loop through all available users, and add them to a list to be returned
-  while (hasMore) {
-    console.log('Loading next page...');
-    // get the current page of results, incrementing page count after call
-    result = await axios.get(url).then(r => {
-      // return the data to the user
-      var links = parse(r.headers.link);
-      if (links.self.url === links.last.url) {
-        hasMore = false;
-      } else {
-        url = links.next.url;
-      }
-      return r.data;
-    }).catch(err => console.log(`Error while retrieving results from Eclipse Projects API (${url}): ${err}`));
-
-    // collect the results
-    if (result !== null && result.length > 0) {
-      for (var i = 0; i < result.length; i++) {
-        data.push(result[i]);
-      }
-    }
-  }
-  return data;
-}
-
-async function eclipseBots() {
-  var botsRaw = await cHttp.getData('https://api.eclipse.org/bots');
-  if (botsRaw === undefined) {
-    console.log('Could not retrieve bots from API');
-    process.exit(1);
-  }
-  return botsRaw;
-}
-
-function processBots(botsRaw) {
-  var botMap = {};
-  for (var botIdx in botsRaw) {
-    var bot = botsRaw[botIdx];
-    if (bot['github.com'] === undefined) {
-      continue;
-    }
-    var projBots = botMap[bot['projectId']];
-    if (projBots === undefined) {
-      projBots = [];
-    }
-    projBots.push(bot['github.com']['username']);
-    botMap[bot['projectId']] = projBots;
-  }
-  return botMap;
 }
 
 function retrieveMaintainedOrgsRepos(data) {
