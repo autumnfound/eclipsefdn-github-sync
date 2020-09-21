@@ -9,6 +9,16 @@ module.exports = class EclipseAPI {
   #config;
   #client;
   #accessToken;
+  #testMode = false;
+  get testMode() {
+    return this.#testMode;
+  }
+  set testMode(testMode) {
+    if (typeof testMode === 'boolean') {
+      this.#testMode = testMode;
+    }
+  }
+
   constructor(config = {}) {
     this.#config = config;
     // if we have oauth config, intialize access token
@@ -29,6 +39,41 @@ module.exports = class EclipseAPI {
   }
 
   async eclipseAPI(paginate = true) {
+    // if test mode is enabled, return data that doesn't impact production
+    if (this.#testMode) {
+      return [{
+        project_id: 'spider.pig',
+        name: 'Spider pig does what a spider pig does',
+        summary: 'Can he fly? No, hes a pig. Look out, here comes the spider pig',
+        logo: '',
+        tags: ['simpsons', 'doh', 'spider pig'],
+        github_repos: [{
+          url: 'https://github.com/eclipsefdn-webdev/spider-pig',
+        }],
+        contributors: [],
+        committers: [{
+          username: 'malowe',
+          url: 'https://api.eclipse.org/account/profile/malowe',
+        }, {
+          username: 'epoirier',
+          url: 'https://api.eclipse.org/account/profile/epoirier',
+        }],
+        project_leads: [{
+          username: 'malowe',
+          url: 'https://api.eclipse.org/account/profile/malowe',
+        }, {
+          username: 'cguindon',
+          url: 'https://api.eclipse.org/account/profile/cguindon',
+        }],
+        working_groups: [{
+          name: 'Cloud Development Tools',
+          id: 'cloud-development-tools',
+        }],
+        spec_project_working_group: [],
+        state: 'Regular',
+      }];
+    }
+
     var hasMore = true;
     var result = [];
     var data = [];

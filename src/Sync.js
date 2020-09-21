@@ -23,6 +23,12 @@ var argv = require('yargs')
     description: 'Runs script as dry run, not writing any changes to API',
     boolean: true,
   })
+  .option('t', {
+    alias: 'devMode',
+    description: 'Runs script in dev mode, which returns API data that does not impact production organizations/teams. '
+      + 'This does NOT affect the static team manager. If testing is wanted for that integration, verbose and dryrun mode are suggested.',
+    boolean: true,
+  })
   .option('V', {
     alias: 'verbose',
     description: 'Sets the script to run in verbose mode',
