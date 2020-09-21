@@ -12,7 +12,7 @@
 
 // custom wrappers
 const Wrapper = require('./GitWrapper.js');
-const CachedHttp = require('./HttpWrapper.js');
+const { HttpWrapper } = require('./HttpWrapper.js');
 
 // set up yargs command line parsing
 var argv = require('yargs')
@@ -110,7 +110,7 @@ async function _init(secret) {
   wrap.setVerbose(argv.V);
   console.log(`Running in dryrun? ${argv.d}`);
 
-  cHttp = new CachedHttp();
+  cHttp = new HttpWrapper();
   stm = new StaticTeamManager();
   stm.verbose = argv.V;
 
