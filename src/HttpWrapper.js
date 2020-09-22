@@ -22,7 +22,6 @@ const httpCacheID = 'http.cache';
 const cacheLoc = './.cache';
 
 class HttpWrapper {
-  // guarded verbose value
   #verbose = false;
   set verbose(val) {
     if (typeof val === 'boolean') {
@@ -41,6 +40,9 @@ class HttpWrapper {
   }
 
   getData(url) {
+    if (this.#verbose === true) {
+      console.log(`HTTPWrapper:getData(url = ${url})`);
+    }
     // check that we haven't retrieved data yet
     var cacheResult = this.#httpCache.getKey(url);
     if (cacheResult != null) {
@@ -59,6 +61,9 @@ class HttpWrapper {
   }
 
   async getRaw(url) {
+    if (this.#verbose === true) {
+      console.log(`HTTPWrapper:getRaw(url = ${url})`);
+    }
     // check that we haven't retrieved data yet
     var cacheResult = this.#httpCache.getKey(url);
     if (cacheResult != null) {
@@ -81,6 +86,9 @@ class HttpWrapper {
   }
 
   close() {
+    if (this.#verbose === true) {
+      console.log(`HTTPWrapper:close()`);
+    }
     this.#httpCache.save(true);
   }
 }
