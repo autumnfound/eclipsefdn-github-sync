@@ -135,7 +135,7 @@ module.exports = class EclipseAPI {
 
   async eclipseBots() {
     if (this.#verbose) {
-      console.log(`EclipseAPI:eclipseBots()`);
+      console.log('EclipseAPI:eclipseBots()');
     }
     var botsRaw = await axios.get('https://api.eclipse.org/bots')
       .then(result => result.data)

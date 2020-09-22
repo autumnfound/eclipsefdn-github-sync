@@ -53,7 +53,7 @@ class HttpWrapper {
     // return promise that returns data after caching it
     return axios.get(url)
       .then(result => {
-        httpCache.setKey(url, result.data);
+        this.#httpCache.setKey(url, result.data);
 
         return result.data;
       })
@@ -87,7 +87,7 @@ class HttpWrapper {
 
   close() {
     if (this.#verbose === true) {
-      console.log(`HTTPWrapper:close()`);
+      console.log('HTTPWrapper:close()');
     }
     this.#httpCache.save(true);
   }

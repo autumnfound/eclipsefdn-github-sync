@@ -75,9 +75,6 @@ class SecretReader {
  * Get modifiable deep copy of the base configuration for this class.
  */
 function getBaseConfig() {
-  if (this.#verbose === true) {
-    console.log(`SecretReader:getBaseConfig()`);
-  }
   return JSON.parse(JSON.stringify(baseConfig));
 }
 
