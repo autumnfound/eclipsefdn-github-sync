@@ -49,7 +49,7 @@ module.exports = class EclipseAPI {
 
   async eclipseAPI(queryStringParams = '', paginate = true) {
     if (this.#verbose) {
-      console.log(`EclipseAPI:eclipseAPI(paginate = ${paginate})`);
+      console.log(`EclipseAPI:eclipseAPI(queryStringParams = ${queryStringParams}, paginate = ${paginate})`);
     }
     // if test mode is enabled, return data that doesn't impact production
     if (this.#testMode) {
