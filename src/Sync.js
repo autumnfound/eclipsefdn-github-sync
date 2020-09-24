@@ -122,6 +122,7 @@ async function _init(secret) {
   stm.verbose = argv.V;
 
   eclipseApi = new EclipseAPI();
+  eclipseApi.testMode = argv.t;
   // get raw project data and post process to add additional context
   var data = await eclipseApi.eclipseAPI('?github_only=1');
   data = eclipseApi.postprocessEclipseData(data, 'github_repos');
@@ -179,6 +180,9 @@ async function runSync(data) {
 }
 
 async function processRepositories(repos, project) {
+  if (argv.V === true) {
+    console.log(`Sync:processRepositories(repos = ${repos}, project = ${JSON.stringify(project)})`);
+  }
   var orgs = [];
   for (var idx in repos) {
     var repo = repos[idx];
@@ -263,6 +267,9 @@ async function processStaticTeam(team) {
 }
 
 async function processProjectsOrg(org, project) {
+  if (argv.V === true) {
+    console.log(`Sync:processProjectsOrg(org = ${org}, project = ${JSON.stringify(project)})`);
+  }
   // prefetch teams to reduce redundant calls
   await wrap.prefetchTeams(org);
   await wrap.prefetchRepos(org);
@@ -278,6 +285,9 @@ async function processProjectsOrg(org, project) {
   }
 }
 async function processOrg(org, team) {
+  if (argv.V === true) {
+    console.log(`Sync:processOrg(org = ${org}, team = ${team})`);
+  }
   // prefetch teams to reduce redundant calls
   await wrap.prefetchTeams(org);
   await wrap.prefetchRepos(org);
@@ -294,12 +304,18 @@ async function processOrg(org, team) {
 }
 
 async function updateProjectTeam(org, project, grouping) {
+  if (argv.V === true) {
+    console.log(`Sync:updateProjectTeam(org = ${org}, project = ${JSON.stringify(project)}, grouping = ${grouping})`);
+  }
   var projectID = project.project_id;
   var teamName = wrap.sanitizeTeamName(`${projectID}-${grouping}`);
   updateTeam(org, teamName, project[grouping]);
 }
 
 async function updateTeam(org, teamName, designatedMembers) {
+  if (argv.V === true) {
+    console.log(`Sync:updateTeam(org = ${org}, teamName = ${teamName}, designatedMembers = ${designatedMembers})`);
+  }
   console.log(`Syncing team '${teamName}' for organization ${org}`);
   var team = await wrap.addTeam(org, teamName);
   // set team to private
@@ -366,6 +382,9 @@ async function updateTeam(org, teamName, designatedMembers) {
 }
 
 async function removeRepoExternalContributors(project, org, repo) {
+  if (argv.V === true) {
+    console.log(`Sync:removeRepoExternalContributors(project = ${JSON.stringify(project)}, org = ${org}, repo = ${repo})`);
+  }
   // get the collaborators
   var collaborators = await wrap.getRepoCollaborators(org, repo);
   Atomics.wait(int32, 0, 0, waitTimeInMS);
@@ -425,6 +444,9 @@ async function removeRepoExternalContributors(project, org, repo) {
 
 
 async function removeOrgExternalContributors(projects, org) {
+  if (argv.V === true) {
+    console.log(`Sync:removeOrgExternalContributors(projects = ${JSON.stringify(projects)}, org = ${org})`);
+  }
   // get the collaborators
   var collaborators = await wrap.getOrgCollaborators(org);
   Atomics.wait(int32, 0, 0, waitTimeInMS);

@@ -418,6 +418,9 @@ module.exports = class {
       console.log(`prefetchTeams(org = ${org})`);
     }
     if (prefetch['teams'][org] === true) {
+      if (this.#verbose === true) {
+        console.log(`Org '${org}' teams have been fetched previously, returning`);
+      }
       return;
     }
     console.log(`Starting prefetch for teams in org=${org}`);
@@ -429,6 +432,7 @@ module.exports = class {
       .then(result => result)
       .catch(err => logError(err, 'team:list'));
     if (data === undefined) {
+      console.log(`An error occured while prefetching teams for org '${org}', returning`);
       return;
     }
 
@@ -455,6 +459,9 @@ module.exports = class {
       console.log(`prefetchRepos(org = ${org})`);
     }
     if (prefetch['repos'][org] === true) {
+      if (this.#verbose === true) {
+        console.log(`Org '${org}' repos have been fetched previously, returning`);
+      }
       return;
     }
     console.log(`Starting prefetch for repos in org=${org}`);
@@ -465,6 +472,7 @@ module.exports = class {
       .then(result => result)
       .catch(err => logError(err, 'team:listMembers'));
     if (data === undefined) {
+      console.log(`An error occured while prefetching repos for org '${org}', returning`);
       return;
     }
     var count = 0;
