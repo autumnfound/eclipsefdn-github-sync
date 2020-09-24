@@ -13,6 +13,7 @@
 // custom wrappers
 const Wrapper = require('./GitWrapper.js');
 const CachedHttp = require('./HttpWrapper.js');
+const EclipseAPI = require('./EclipseAPI.js');
 
 // set up yargs command line parsing
 var argv = require('yargs')
@@ -65,11 +66,11 @@ const EXIT_ERROR_STATE = 1;
 const axios = require('axios');
 const { SecretReader, getBaseConfig } = require('./SecretReader.js');
 const { StaticTeamManager, ServiceTypes } = require('./teams/StaticTeamManager.js');
-const parse = require('parse-link-header');
 
 // create global placeholder for wrapper
 var wrap;
 var cHttp;
+var eclipseApi;
 var bots;
 var stm;
 
@@ -120,39 +121,15 @@ async function _init(secret) {
   stm = new StaticTeamManager();
   stm.verbose = argv.V;
 
-  var hasMore = true;
-  var result = [];
-  var data = [];
-  console.log('Loading Eclipse API data!');
-  var url = 'https://projects.eclipse.org/api/projects?github_only=1&';
-  // loop through all available users, and add them to a list to be returned
-  while (hasMore) {
-    console.log('Loading next page...');
-    // get the current page of results, incrementing page count after call
-    result = await axios.get(url).then(r => {
-      // return the data to the user
-      var links = parse(r.headers.link);
-      if (links.self.url === links.last.url) {
-        hasMore = false;
-      } else {
-        url = links.next.url;
-      }
-      return r.data;
-    }).catch(err => console.log(`Error while retrieving results from Eclipse Projects API (${url}): ${err}`));
-
-    // collect the results
-    if (result !== undefined && result.length > 0) {
-      for (var i = 0; i < result.length; i++) {
-        data.push(result[i]);
-      }
-    }
-  }
-  data = postprocessData(data);
+  eclipseApi = new EclipseAPI();
+  // get raw project data and post process to add additional context
+  var data = await eclipseApi.eclipseAPI('?github_only=1');
+  data = eclipseApi.postprocessEclipseData(data, 'github_repos');
 
   console.log(`Finished preloading ${data.length} projects`);
   // get bots for raw project processing
-  var rawBots = await eclipseBots();
-  bots = processBots(rawBots);
+  var rawBots = await eclipseApi.eclipseBots();
+  bots = eclipseApi.processBots(rawBots);
   console.log(`Found ${Object.keys(bots).length} registered bots`);
 
   // start the sync operation.
@@ -160,43 +137,6 @@ async function _init(secret) {
 
   // close the wrappers, persisting required cache info
   cHttp.close();
-}
-
-function postprocessData(data) {
-  for (var key in data) {
-    var project = data[key];
-    // add post processing fields
-    project.pp_repos = [];
-    project.pp_orgs = [];
-    var repos = project.github_repos;
-    for (var idx in repos) {
-      var repo = repos[idx];
-      var repoUrl = repo.url;
-      console.log(`Checking repo URL: ${repoUrl}`);
-      // strip the repo url to get the org + repo
-      var match = /\/([^/]+)\/([^/]+)\/?$/.exec(repoUrl);
-      // check to make sure we got a match
-      if (match === null) {
-        continue;
-      }
-
-      // get the org + repo from the repo URL
-      var org = match[1];
-      var repoName = match[2];
-      // set the computed data back to the objects
-      repo.org = org;
-      repo.repo = repoName;
-      if (project.pp_orgs.indexOf(org) === -1) {
-        project.pp_orgs.push(org);
-      }
-      if (project.pp_repos.indexOf(repoName) === -1) {
-        project.pp_repos.push(repoName);
-      }
-    }
-    // set back to ensure properly set
-    data[key] = project;
-  }
-  return data;
 }
 
 async function runSync(data) {
@@ -541,30 +481,4 @@ async function removeOrgExternalContributors(projects, org) {
       console.log(`Dry run set, would have removing user '${uname}' from collaborators on ${org}`);
     }
   }
-}
-
-async function eclipseBots() {
-  var botsRaw = await cHttp.getData('https://api.eclipse.org/bots');
-  if (botsRaw === undefined) {
-    console.log('Could not retrieve bots from API');
-    process.exit(EXIT_ERROR_STATE);
-  }
-  return botsRaw;
-}
-
-function processBots(botsRaw) {
-  var botMap = {};
-  for (var botIdx in botsRaw) {
-    var bot = botsRaw[botIdx];
-    if (bot['github.com'] === undefined) {
-      continue;
-    }
-    var projBots = botMap[bot['projectId']];
-    if (projBots === undefined) {
-      projBots = [];
-    }
-    projBots.push(bot['github.com']['username']);
-    botMap[bot['projectId']] = projBots;
-  }
-  return botMap;
 }

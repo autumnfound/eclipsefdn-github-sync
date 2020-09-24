@@ -38,7 +38,7 @@ module.exports = class EclipseAPI {
     }
   }
 
-  async eclipseAPI(paginate = true) {
+  async eclipseAPI(queryStringParams = '', paginate = true) {
     // if test mode is enabled, return data that doesn't impact production
     if (this.#testMode) {
       return [{
@@ -78,7 +78,7 @@ module.exports = class EclipseAPI {
     var result = [];
     var data = [];
     // add timestamp to url to avoid browser caching
-    var url = 'https://projects.eclipse.org/api/projects';
+    var url = 'https://projects.eclipse.org/api/projects' + queryStringParams;
     // loop through all available users, and add them to a list to be returned
     do {
       console.log('Loading next page...');

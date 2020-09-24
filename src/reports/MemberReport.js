@@ -38,13 +38,14 @@ const SUBSTRING_SECOND_LAST_CHARACTER_TARGET = 2;
 // custom wrappers
 const Wrapper = require('../GitWrapper.js');
 const CachedHttp = require('../HttpWrapper.js');
+const EclipseAPI = require('../EclipseAPI.js');
 const axios = require('axios');
-const parse = require('parse-link-header');
 var readline = require('readline');
 
 // create global placeholder for wrapper
 var wrap;
 var cHttp;
+var eclipseApi;
 
 // thread sleeping to prevent abuse of API
 var sab = new SharedArrayBuffer(MB_IN_BYTES);
@@ -81,10 +82,10 @@ async function run(secret) {
   wrap.setDryRun(argv.d);
 
   cHttp = new CachedHttp();
+  eclipseApi = new EclipseAPI();
 
   // get eclipse api data
-  var rawData = await eclipseAPI();
-  var data = await mapRepoToUsers(rawData, argv.o);
+  var data = await mapRepoToUsers(await eclipseApi.eclipseAPI('?github_only=1'), argv.o);
   var remaining = [];
   console.log(`Getting teams of org '${argv.o}'`);
   // get all teams for the current organization
@@ -187,38 +188,6 @@ async function generateDataRows(currMembers, teamName, org, invited = false) {
   return out;
 }
 
-async function eclipseAPI() {
-  var hasMore = true;
-  var result = [];
-  var data = [];
-  // add timestamp to url to avoid browser caching
-  var url = 'https://projects.eclipse.org/api/projects?github_only=1';
-  // loop through all available users, and add them to a list to be returned
-  while (hasMore) {
-    console.log('Loading next page...');
-    // get the current page of results, incrementing page count after call
-    result = await axios.get(url).then(r => {
-      // return the data to the user
-      var links = parse(r.headers.link);
-      if (links.self.url === links.last.url) {
-        hasMore = false;
-      } else {
-        url = links.next.url;
-      }
-      return r.data;
-    }).catch(err => console.log(`Error while retrieving results from Eclipse Projects API (${url}): ${err}`));
-
-    // collect the results
-    if (result != null && result.length > 0) {
-      for (var i = 0; i < result.length; i++) {
-        data.push(result[i]);
-        console.log(`Found ${result[i].project_id}`);
-      }
-    }
-  }
-  return data;
-}
-
 async function mapRepoToUsers(data, org) {
   // map project repos to the project id
   var out = {};
@@ -231,7 +200,7 @@ async function mapRepoToUsers(data, org) {
       console.log(`Pre-processing project ${proj.project_id}`);
 
       // get the repos for each of the projects
-      var repos = getReposFromProject(proj, grouping, org);
+      var repos = getReposFromProject(proj, org);
       // stop processing if we don't have any valid repos
       if (repos.length === 0) {
         console.log(`No repositories found for grouping '${grouping}' in project '${proj.project_id}'`);
@@ -272,7 +241,7 @@ async function mapRepoToUsers(data, org) {
   return out;
 }
 
-function getReposFromProject(proj, grouping, org) {
+function getReposFromProject(proj, org) {
   var repos = [];
   for (var l in proj['github_repos']) {
     // get repo url for current project
