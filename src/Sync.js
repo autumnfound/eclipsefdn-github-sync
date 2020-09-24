@@ -180,9 +180,6 @@ async function runSync(data) {
 }
 
 async function processRepositories(repos, project) {
-  if (argv.V === true) {
-    console.log(`Sync:processRepositories(repos = ${repos}, project = ${JSON.stringify(project)})`);
-  }
   var orgs = [];
   for (var idx in repos) {
     var repo = repos[idx];
@@ -208,7 +205,7 @@ async function processRepositories(repos, project) {
         // Ensure that the teams refer to the repo
         await wrap.addRepoToTeam(org, `${project.project_id}-committers`, repoName, 'push');
         await wrap.addRepoToTeam(org, `${project.project_id}-contributors`, repoName, 'triage');
-        await wrap.addRepoToTeam(org, `${project.project_id}-project-leads`, repoName, 'pull', false);
+        await wrap.addRepoToTeam(org, `${project.project_id}-project-leads`, repoName, 'maintain', false);
       } catch (e) {
         console.log(`Error while updating ${project.project_id}. \n${e}`);
       }
@@ -267,9 +264,6 @@ async function processStaticTeam(team) {
 }
 
 async function processProjectsOrg(org, project) {
-  if (argv.V === true) {
-    console.log(`Sync:processProjectsOrg(org = ${org}, project = ${JSON.stringify(project)})`);
-  }
   // prefetch teams to reduce redundant calls
   await wrap.prefetchTeams(org);
   await wrap.prefetchRepos(org);
@@ -285,9 +279,6 @@ async function processProjectsOrg(org, project) {
   }
 }
 async function processOrg(org, team) {
-  if (argv.V === true) {
-    console.log(`Sync:processOrg(org = ${org}, team = ${team})`);
-  }
   // prefetch teams to reduce redundant calls
   await wrap.prefetchTeams(org);
   await wrap.prefetchRepos(org);
@@ -304,18 +295,12 @@ async function processOrg(org, team) {
 }
 
 async function updateProjectTeam(org, project, grouping) {
-  if (argv.V === true) {
-    console.log(`Sync:updateProjectTeam(org = ${org}, project = ${JSON.stringify(project)}, grouping = ${grouping})`);
-  }
   var projectID = project.project_id;
   var teamName = wrap.sanitizeTeamName(`${projectID}-${grouping}`);
   updateTeam(org, teamName, project[grouping]);
 }
 
 async function updateTeam(org, teamName, designatedMembers) {
-  if (argv.V === true) {
-    console.log(`Sync:updateTeam(org = ${org}, teamName = ${teamName}, designatedMembers = ${designatedMembers})`);
-  }
   console.log(`Syncing team '${teamName}' for organization ${org}`);
   var team = await wrap.addTeam(org, teamName);
   // set team to private
@@ -382,9 +367,6 @@ async function updateTeam(org, teamName, designatedMembers) {
 }
 
 async function removeRepoExternalContributors(project, org, repo) {
-  if (argv.V === true) {
-    console.log(`Sync:removeRepoExternalContributors(project = ${JSON.stringify(project)}, org = ${org}, repo = ${repo})`);
-  }
   // get the collaborators
   var collaborators = await wrap.getRepoCollaborators(org, repo);
   Atomics.wait(int32, 0, 0, waitTimeInMS);
@@ -444,9 +426,6 @@ async function removeRepoExternalContributors(project, org, repo) {
 
 
 async function removeOrgExternalContributors(projects, org) {
-  if (argv.V === true) {
-    console.log(`Sync:removeOrgExternalContributors(projects = ${JSON.stringify(projects)}, org = ${org})`);
-  }
   // get the collaborators
   var collaborators = await wrap.getOrgCollaborators(org);
   Atomics.wait(int32, 0, 0, waitTimeInMS);
