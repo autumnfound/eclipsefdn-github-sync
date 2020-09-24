@@ -47,7 +47,6 @@ const { Gitlab } = require('gitlab');
 const EclipseAPI = require('./EclipseAPI.js');
 
 var api;
-
 var eApi;
 var bots;
 
@@ -186,6 +185,9 @@ async function run(secret, eclipseToken) {
 }
 
 async function removeAdditionalUsers(expectedUsers, group) {
+  if (argv.V) {
+    console.log(`GitlabSync:removeAdditionalUsers(expectedUsers = ${expectedUsers}, group = ${group})`);
+  }
   // get the current list of users for the group
   var members = await getGroupMembers(group);
   if (members === undefined) {
@@ -222,6 +224,9 @@ async function removeAdditionalUsers(expectedUsers, group) {
 
 
 async function addUserToGroup(user, group, perms) {
+  if (argv.V) {
+    console.log(`GitlabSync:addUserToGroup(user = ${user}, group = ${group}, perms = ${perms})`);
+  }
   // get the members for the current group
   var members = await getGroupMembers(group);
   if (members === undefined) {
@@ -283,6 +288,9 @@ async function addUserToGroup(user, group, perms) {
 }
 
 async function getProject(name, parent) {
+  if (argv.V) {
+    console.log(`GitlabSync:getProject(name = ${name}, parent = ${parent})`);
+  }
   if (name.trim() === '.github') {
     console.log("Skipping project with name '.github'. No current equivalent to default repository in GitLab.");
     return;
@@ -330,6 +338,9 @@ async function getProject(name, parent) {
 }
 
 async function getGroup(name, path, parent, visibility = 'public') {
+  if (argv.V) {
+    console.log(`GitlabSync:getGroup(name = ${name}, path = ${path}, parent = ${parent}, visibility = ${visibility})`);
+  }
   var g = namedGroups[sanitizeGroupName(path)];
   if (g === undefined) {
     console.log(`Creating new group with name '${name}'`);
@@ -374,6 +385,9 @@ async function getGroup(name, path, parent, visibility = 'public') {
 }
 
 async function getUser(uname, url) {
+  if (argv.V) {
+    console.log(`GitlabSync:getUser(uname = ${uname}, url = ${url})`);
+  }
   if (url === undefined || url === '') {
     console.log(`Cannot fetch user information for user '${uname}' with no set URL`);
     return;
@@ -434,6 +448,9 @@ async function getUser(uname, url) {
 }
 
 async function getGroupMembers(group) {
+  if (argv.V) {
+    console.log(`GitlabSync:getGroupMembers(group = ${group})`);
+  }
   var members = gMems[group.id];
   if (members === undefined) {
     try {
@@ -457,6 +474,9 @@ async function getGroupMembers(group) {
 
 
 function getUserList(project) {
+  if (argv.V) {
+    console.log(`GitlabSync:getUserList(project = ${project})`);
+  }
   var l = {};
   // add the contributors with reporter access
   for (var contributorIdx in project.contributors) {
@@ -493,6 +513,9 @@ function getUserList(project) {
 }
 
 function sanitizeGroupName(pid) {
+  if (argv.V) {
+    console.log(`GitlabSync:sanitizeGroupName(pid = ${pid})`);
+  }
   if (pid !== undefined) {
     return pid.toLowerCase().replace(/[^\s\da-zA-Z-]/g, '-');
   }

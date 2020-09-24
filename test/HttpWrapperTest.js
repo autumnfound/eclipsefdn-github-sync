@@ -1,10 +1,10 @@
 var chai = require('chai');
 var expect = chai.expect;
 
-var httpwrap = require('../src/HttpWrapper.js');
+var { HttpWrapper } = require('../src/HttpWrapper.js');
 
 describe('HttpWrapper', function() {
-	var http = new httpwrap();
+	var http = new HttpWrapper();
 	describe('#getRaw', function() {
 		describe('success', function() {
 			var result;

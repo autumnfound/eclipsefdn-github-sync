@@ -9,6 +9,15 @@ module.exports = class EclipseAPI {
   #config;
   #client;
   #accessToken;
+  #verbose = false;
+  set verbose(val) {
+    if (typeof val === 'boolean') {
+      this.#verbose = val;
+    }
+  }
+  get verbose() {
+    return this.#verbose;
+  }
   #testMode = false;
   get testMode() {
     return this.#testMode;
@@ -39,6 +48,9 @@ module.exports = class EclipseAPI {
   }
 
   async eclipseAPI(queryStringParams = '', paginate = true) {
+    if (this.#verbose) {
+      console.log(`EclipseAPI:eclipseAPI(queryStringParams = ${queryStringParams}, paginate = ${paginate})`);
+    }
     // if test mode is enabled, return data that doesn't impact production
     if (this.#testMode) {
       return [{
@@ -105,6 +117,9 @@ module.exports = class EclipseAPI {
   }
 
   postprocessEclipseData(data, param) {
+    if (this.#verbose) {
+      console.log(`EclipseAPI:postprocessEclipseData(data = ${JSON.stringify(data)}, param = ${param})`);
+    }
     for (var key in data) {
       var project = data[key];
       // add post processing fields
@@ -150,6 +165,9 @@ module.exports = class EclipseAPI {
   }
 
   async eclipseUser(username) {
+    if (this.#verbose) {
+      console.log(`EclipseAPI:eclipseUser(username = ${username})`);
+    }
     return await axios.get('https://api.eclipse.org/account/profile/' + username, {
       headers: {
         Authorization: `Bearer ${await this._getAccessToken()}`,
@@ -160,6 +178,9 @@ module.exports = class EclipseAPI {
   }
 
   async eclipseBots() {
+    if (this.#verbose) {
+      console.log('EclipseAPI:eclipseBots()');
+    }
     var botsRaw = await axios.get('https://api.eclipse.org/bots')
       .then(result => result.data)
       .catch(err => console.log(err));
@@ -171,6 +192,9 @@ module.exports = class EclipseAPI {
   }
 
   processBots(botsRaw, site = 'github.com') {
+    if (this.#verbose) {
+      console.log(`EclipseAPI:processBots(botsRaw = ${JSON.stringify(botsRaw)}, site = ${site})`);
+    }
     var botMap = {};
     for (var botIdx in botsRaw) {
       var bot = botsRaw[botIdx];

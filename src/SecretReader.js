@@ -27,6 +27,15 @@ const baseConfig = {
  * new reader in such a case.
  */
 class SecretReader {
+  #verbose = false;
+  set verbose(val) {
+    if (typeof val === 'boolean') {
+      this.#verbose = val;
+    }
+  }
+  get verbose() {
+    return this.#verbose;
+  }
   #config;
   constructor(config) {
     // check that our config exists or isn't unset. Deep cloning not needed
@@ -40,6 +49,9 @@ class SecretReader {
   }
 
   readSecret = function(name, encoding = this.#config.encoding) {
+    if (this.#verbose === true) {
+      console.log(`SecretReader:readSecret(name = ${name}, encoding = ${encoding})`);
+    }
     var filepath = `${this.#config.root}/${name}`;
     try {
       var data = fs.readFileSync(filepath, { encoding: encoding });
@@ -62,10 +74,9 @@ class SecretReader {
 /**
  * Get modifiable deep copy of the base configuration for this class.
  */
-function getBaseConfig(){
+function getBaseConfig() {
   return JSON.parse(JSON.stringify(baseConfig));
 }
-
 
 module.exports.SecretReader = SecretReader;
 module.exports.getBaseConfig = getBaseConfig;
