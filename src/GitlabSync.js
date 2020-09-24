@@ -7,6 +7,11 @@ var argv = require('yargs')
     description: 'Runs script as dry run, not writing any changes to API',
     boolean: true,
   })
+  .option('D', {
+    alias: 'devMode',
+    description: 'Runs script in dev mode, which returns API data that does not impact production organizations/teams.',
+    boolean: true,
+  })
   .option('V', {
     alias: 'verbose',
     description: 'Sets the script to run in verbose mode',
@@ -88,6 +93,7 @@ async function run(secret, eclipseToken) {
     token: secret,
   });
   eApi = new EclipseAPI(JSON.parse(eclipseToken));
+  eApi.testMode = argv.D;
 
   // get raw project data and post process to add additional context
   var data = await eApi.eclipseAPI();

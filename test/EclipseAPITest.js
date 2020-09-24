@@ -11,7 +11,7 @@ describe('EclipseAPI', function() {
 			var result;
 			before(async function() {
 				// get eclipse projects, disable pagination as this is a long process
-				result = await EclipseAPI.eclipseAPI(false);
+				result = await EclipseAPI.eclipseAPI('', false);
 			});
 
 			it('should contain JSON data', function() {

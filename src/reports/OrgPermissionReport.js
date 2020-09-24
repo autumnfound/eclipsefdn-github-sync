@@ -35,12 +35,12 @@ const MB_IN_BYTES = 1024;
 // custom wrappers
 const Wrapper = require('../GitWrapper.js');
 const CachedHttp = require('../HttpWrapper.js');
-const axios = require('axios');
-const parse = require('parse-link-header');
+const EclipseAPI = require('../EclipseAPI.js');
 const readline = require('readline');
 // create global placeholder for wrapper
 var wrap;
 var cHttp;
+var eclipseApi;
 
 // thread sleeping to prevent abuse of API
 var sab = new SharedArrayBuffer(MB_IN_BYTES);
@@ -91,9 +91,10 @@ async function run(secret) {
   // build wrapper
   wrap = new Wrapper(secret);
   cHttp = new CachedHttp();
+  eclipseApi = new EclipseAPI();
 
   // get eclipse api data
-  var data = retrieveMaintainedOrgRepos(await eclipseAPI());
+  var data = retrieveMaintainedOrgRepos(await eclipseApi.eclipseAPI('?github_only=1'));
   var regex = new RegExp('.*(-committers|-contributors|-project-leads)$');
   var rows = [];
   var keys = Object.keys(data);
@@ -184,37 +185,6 @@ async function run(secret) {
     console.log(out);
   }
   cHttp.close();
-}
-
-async function eclipseAPI() {
-  var hasMore = true;
-  var result = [];
-  var data = [];
-  // add timestamp to url to avoid browser caching
-  var url = 'https://projects.eclipse.org/api/projects?github_only=1';
-  // loop through all available users, and add them to a list to be returned
-  while (hasMore) {
-    console.log('Loading next page...');
-    // get the current page of results, incrementing page count after call
-    result = await axios.get(url).then(result => {
-      // return the data to the user
-      var links = parse(result.headers.link);
-      if (links.self.url === links.last.url) {
-        hasMore = false;
-      } else {
-        url = links.next.url;
-      }
-      return result.data;
-    }).catch(err => console.log('Error while loading EclipseAPI data: ' + err));
-
-    // collect the results
-    if (result !== undefined && result.length > 0) {
-      for (var i = 0; i < result.length; i++) {
-        data.push(result[i]);
-      }
-    }
-  }
-  return data;
 }
 
 function retrieveMaintainedOrgRepos(data) {

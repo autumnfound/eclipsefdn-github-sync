@@ -18,6 +18,15 @@ module.exports = class EclipseAPI {
   get verbose() {
     return this.#verbose;
   }
+  #testMode = false;
+  get testMode() {
+    return this.#testMode;
+  }
+  set testMode(testMode) {
+    if (typeof testMode === 'boolean') {
+      this.#testMode = testMode;
+    }
+  }
 
   constructor(config = {}) {
     this.#config = config;
@@ -38,15 +47,50 @@ module.exports = class EclipseAPI {
     }
   }
 
-  async eclipseAPI(paginate = true) {
+  async eclipseAPI(queryStringParams = '', paginate = true) {
     if (this.#verbose) {
       console.log(`EclipseAPI:eclipseAPI(paginate = ${paginate})`);
     }
+    // if test mode is enabled, return data that doesn't impact production
+    if (this.#testMode) {
+      return [{
+        project_id: 'spider.pig',
+        name: 'Spider pig does what a spider pig does',
+        summary: 'Can he fly? No, hes a pig. Look out, here comes the spider pig',
+        logo: '',
+        tags: ['simpsons', 'doh', 'spider pig'],
+        github_repos: [{
+          url: 'https://github.com/eclipsefdn-webdev/spider-pig',
+        }],
+        contributors: [],
+        committers: [{
+          username: 'malowe',
+          url: 'https://api.eclipse.org/account/profile/malowe',
+        }, {
+          username: 'epoirier',
+          url: 'https://api.eclipse.org/account/profile/epoirier',
+        }],
+        project_leads: [{
+          username: 'malowe',
+          url: 'https://api.eclipse.org/account/profile/malowe',
+        }, {
+          username: 'cguindon',
+          url: 'https://api.eclipse.org/account/profile/cguindon',
+        }],
+        working_groups: [{
+          name: 'Cloud Development Tools',
+          id: 'cloud-development-tools',
+        }],
+        spec_project_working_group: [],
+        state: 'Regular',
+      }];
+    }
+
     var hasMore = true;
     var result = [];
     var data = [];
     // add timestamp to url to avoid browser caching
-    var url = 'https://projects.eclipse.org/api/projects';
+    var url = 'https://projects.eclipse.org/api/projects' + queryStringParams;
     // loop through all available users, and add them to a list to be returned
     do {
       console.log('Loading next page...');
