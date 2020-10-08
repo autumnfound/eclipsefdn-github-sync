@@ -207,7 +207,7 @@ async function processRepositories(repos, project) {
 
         // Ensure that the teams refer to the repo
         await wrap.addRepoToTeam(org, `${project.project_id}-committers`, repoName, 'push');
-        await wrap.addRepoToTeam(org, `${project.project_id}-contributors`, repoName);
+        await wrap.addRepoToTeam(org, `${project.project_id}-contributors`, repoName, 'triage');
         await wrap.addRepoToTeam(org, `${project.project_id}-project-leads`, repoName, 'pull', false);
       } catch (e) {
         console.log(`Error while updating ${project.project_id}. \n${e}`);
