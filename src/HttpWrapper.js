@@ -11,19 +11,40 @@
  SPDX-License-Identifier: EPL-2.0
 ******************************************************************/
 
-const axios = require('axios');
+/** default cache time of 2 hours */
+const DEFAULT_CACHE_TIME = 120;
 
+const axios = require('axios');
 const TimeCache = require('./TimeCache.js');
 
 // variables for use with the cache
 const httpCacheID = 'http.cache';
 const cacheLoc = './.cache';
-let httpCache = new TimeCache(httpCacheID, cacheLoc, 120);
 
-module.exports = function() {
-  this.getData = function(url) {
+class HttpWrapper {
+  #verbose = false;
+  set verbose(val) {
+    if (typeof val === 'boolean') {
+      this.#verbose = val;
+    }
+  }
+  get verbose() {
+    return this.#verbose;
+  }
+  #cacheTime;
+  #httpCache;
+
+  constructor(cacheTime) {
+    this.#cacheTime = cacheTime | DEFAULT_CACHE_TIME;
+    this.#httpCache = new TimeCache(httpCacheID, cacheLoc, this.#cacheTime);
+  }
+
+  getData(url) {
+    if (this.#verbose === true) {
+      console.log(`HTTPWrapper:getData(url = ${url})`);
+    }
     // check that we haven't retrieved data yet
-    var cacheResult = httpCache.getKey(url);
+    var cacheResult = this.#httpCache.getKey(url);
     if (cacheResult != null) {
       console.log(`Found cached result for endpoint call ${url}`);
       return cacheResult;
@@ -32,16 +53,19 @@ module.exports = function() {
     // return promise that returns data after caching it
     return axios.get(url)
       .then(result => {
-        httpCache.setKey(url, result.data);
+        this.#httpCache.setKey(url, result.data);
 
         return result.data;
       })
       .catch(err => console.log(err));
-  };
+  }
 
-  this.getRaw = async function(url) {
+  async getRaw(url) {
+    if (this.#verbose === true) {
+      console.log(`HTTPWrapper:getRaw(url = ${url})`);
+    }
     // check that we haven't retrieved data yet
-    var cacheResult = httpCache.getKey(url);
+    var cacheResult = this.#httpCache.getKey(url);
     if (cacheResult != null) {
       console.log(`Found cached result for endpoint call ${url}`);
       return cacheResult;
@@ -50,7 +74,7 @@ module.exports = function() {
     // create call that returns error or result raw, no processing
     var raw = await axios.get(url)
       .then(result => {
-        httpCache.setKey(url, result);
+        this.#httpCache.setKey(url, result);
 
         return result;
       })
@@ -59,9 +83,13 @@ module.exports = function() {
         return err;
       });
     return raw;
-  };
+  }
 
-  this.close = function() {
-    httpCache.save(true);
-  };
-};
+  close() {
+    if (this.#verbose === true) {
+      console.log('HTTPWrapper:close()');
+    }
+    this.#httpCache.save(true);
+  }
+}
+module.exports.HttpWrapper = HttpWrapper;

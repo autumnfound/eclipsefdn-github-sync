@@ -9,15 +9,6 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ******************************************************************************/
-
-// custom wrappers
-const Wrapper = require('../GitWrapper.js');
-const CachedHttp = require('../HttpWrapper.js');
-const axios = require('axios');
-const parse = require('parse-link-header');
-
-var readline = require('readline');
-
 // set up yargs command line parsing
 var argv = require('yargs')
   .usage('Usage: $0 [options]')
@@ -39,28 +30,41 @@ var argv = require('yargs')
   .epilog('Copyright 2019 Eclipse Foundation inc.')
   .argv;
 
+const MB_IN_BYTES = 1024;
+const DEFAULT_WAIT_PERIOD_IN_MS = 500;
+const SPLICE_CURRENT_ENTRY_ONLY = 1;
+const SUBSTRING_SECOND_LAST_CHARACTER_TARGET = 2;
+
+// custom wrappers
+const Wrapper = require('../GitWrapper.js');
+const CachedHttp = require('../HttpWrapper.js');
+const EclipseAPI = require('../EclipseAPI.js');
+const axios = require('axios');
+var readline = require('readline');
+
 // create global placeholder for wrapper
 var wrap;
 var cHttp;
+var eclipseApi;
 
 // thread sleeping to prevent abuse of API
-var sab = new SharedArrayBuffer(1024);
+var sab = new SharedArrayBuffer(MB_IN_BYTES);
 var int32 = new Int32Array(sab);
-const waitTimeInMS = 500;
+const waitTimeInMS = DEFAULT_WAIT_PERIOD_IN_MS;
 
 // read in secret from command line
 var rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
+rl.question('Please enter your GitHub access token: ', answer => acceptInput(answer));
 
 // best attempt at basic input checking
 function acceptInput(answer) {
   var secret = answer.trim();
-  if (!secret || secret.length == 0) {
+  if (!secret || secret.length === 0) {
     console.log('A token is required to run sync functionality, please try again');
-    return rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
+    return rl.question('Please enter your GitHub access token: ', answer => acceptInput(answer));
   }
 
   rl.close();
@@ -68,7 +72,7 @@ function acceptInput(answer) {
 }
 
 async function run(secret) {
-  if (secret == undefined || secret == '') {
+  if (secret === undefined || secret === '') {
     console.log('Could not fetch API secret, exiting');
     return;
   }
@@ -78,10 +82,10 @@ async function run(secret) {
   wrap.setDryRun(argv.d);
 
   cHttp = new CachedHttp();
+  eclipseApi = new EclipseAPI();
 
   // get eclipse api data
-  var rawData = await eclipseAPI();
-  var data = await mapRepoToUsers(rawData, argv.o);
+  var data = await mapRepoToUsers(await eclipseApi.eclipseAPI('?github_only=1'), argv.o);
   var remaining = [];
   console.log(`Getting teams of org '${argv.o}'`);
   // get all teams for the current organization
@@ -90,7 +94,7 @@ async function run(secret) {
     var team = ts[idx];
     console.log(`Starting processing: ${team.slug}`);
     // get the members for the current team
-    var members = await wrap.getTeamMembers(argv.o, wrap.sanitizeTeamName(team.slug), team.id);
+    var members = await wrap.getTeamMembers(argv.o, team);
 
     // create secondary list to modify while looping
     var s = [];
@@ -108,8 +112,8 @@ async function run(secret) {
     }
 
     // generate rows for untracked invited members
-    var invitees = await wrap.getInvitedMembers(argv.o, team.slug, team.id);
-    if (invitees != null) {
+    var invitees = await wrap.getInvitedMembers(argv.o, team);
+    if (invitees !== null && invitees.length > 0) {
       s = [];
       for (var invitee in invitees) {
         s.push(invitees[invitee].login.toLowerCase());
@@ -145,7 +149,7 @@ async function removeTrackedUsers(currMembers, trackedMembers, team) {
     var repoName = rs[repoIdx]['name'];
     console.log(`Checking repo '${repoName}'`);
     var allowedUsers = trackedMembers[repoName];
-    if (allowedUsers == null) {
+    if (allowedUsers === undefined) {
       continue;
     }
     // iterate over users
@@ -156,7 +160,7 @@ async function removeTrackedUsers(currMembers, trackedMembers, team) {
       // remove user if it was found
       if (teamUserIdx > -1) {
         console.log(`Found tracked user ${currMembers[teamUserIdx]}, removing!`);
-        currMembers.splice(teamUserIdx, 1);
+        currMembers.splice(teamUserIdx, SPLICE_CURRENT_ENTRY_ONLY);
         console.log(`New list: ${currMembers}`);
       }
     }
@@ -177,43 +181,11 @@ async function generateDataRows(currMembers, teamName, org, invited = false) {
       github: currMembers[memberIdx],
       team: teamName,
       org: org,
-      uname: !result || result.name == null ? '' : result.name,
+      uname: !result || result.name === undefined ? '' : result.name,
       invited: invited,
     });
   }
   return out;
-}
-
-async function eclipseAPI() {
-  var hasMore = true;
-  var result = [];
-  var data = [];
-  // add timestamp to url to avoid browser caching
-  var url = `https://projects.eclipse.org/api/projects?github_only=1&timestamp=${new Date().getTime()}`;
-  // loop through all available users, and add them to a list to be returned
-  while (hasMore) {
-    console.log('Loading next page...');
-    // get the current page of results, incrementing page count after call
-    result = await axios.get(url).then(r => {
-      // return the data to the user
-      var links = parse(r.headers.link);
-      if (links.self.url == links.last.url) {
-        hasMore = false;
-      } else {
-        url = links.next.url;
-      }
-      return r.data;
-    }).catch(err => console.log(`Error while retrieving results from Eclipse Projects API (${url}): ${err}`));
-
-    // collect the results
-    if (result != null && result.length > 0) {
-      for (var i = 0; i < result.length; i++) {
-        data.push(result[i]);
-        console.log(`Found ${result[i].project_id}`);
-      }
-    }
-  }
-  return data;
 }
 
 async function mapRepoToUsers(data, org) {
@@ -228,9 +200,9 @@ async function mapRepoToUsers(data, org) {
       console.log(`Pre-processing project ${proj.project_id}`);
 
       // get the repos for each of the projects
-      var repos = getReposFromProject(proj, grouping, org);
+      var repos = getReposFromProject(proj, org);
       // stop processing if we don't have any valid repos
-      if (repos.length == 0) {
+      if (repos.length === 0) {
         console.log(`No repositories found for grouping '${grouping}' in project '${proj.project_id}'`);
         continue;
       }
@@ -269,25 +241,26 @@ async function mapRepoToUsers(data, org) {
   return out;
 }
 
-function getReposFromProject(proj, grouping, org) {
+function getReposFromProject(proj, org) {
   var repos = [];
   for (var l in proj['github_repos']) {
     // get repo url for current project
     var gitUrl = proj['github_repos'][l]['url'];
-    var match = /\/([^\/]*)\/([^\/]*\/?)$/.exec(gitUrl);
-    if (match == undefined) {
+    var match = /\/([^/]*)\/([^/]*\/?)$/.exec(gitUrl);
+    if (match === null) {
       continue;
     }
 
     // get the org + repo from the repo URL
     var orgName = match[1];
-    if (orgName != org) {
+    if (orgName !== org) {
       console.log(`Skipping repo URL as its org (${orgName}) doesn't match expected org of '${org}': '${gitUrl}'`);
       continue;
     }
     var repoName = match[2];
     if (repoName.endsWith('/')) {
-      repoName = repoName.substring(0, repoName.length - 2);
+      var repoNameSlashIdx = repoName.length - SUBSTRING_SECOND_LAST_CHARACTER_TARGET;
+      repoName = repoName.substring(0, repoNameSlashIdx);
     }
 
     // retain the repo name

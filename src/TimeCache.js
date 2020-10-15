@@ -16,17 +16,33 @@
 
  The aforementioned file forms the base in which this class was implemented.
  ****************************************************************************/
-
+const MILLIS_IN_SECOND = 1000;
+const SECONDS_IN_MINUTE = 60;
 const flatCache = require('flat-cache');
 
 module.exports = class {
+  // guarded verbose value
+  #verbose = false;
+  set verbose(val) {
+    if (typeof val === 'boolean') {
+      this.#verbose = val;
+    }
+  }
+  get verbose() {
+    return this.#verbose;
+  }
   #cache;
   #expire;
+
   constructor(name, path, cacheTime = 0) {
     this.#cache = flatCache.load(name, path);
-    this.#expire = cacheTime === 0 ? false : cacheTime * 1000 * 60;
+    this.#expire = cacheTime === 0 ? false : cacheTime * MILLIS_IN_SECOND * SECONDS_IN_MINUTE;
   }
+
   getKey(key) {
+    if (this.#verbose === true) {
+      console.log(`TimeCache:getKey(key = ${key})`);
+    }
     var now = new Date().getTime();
     var value = this.#cache.getKey(key);
     if (value === undefined || (value.expire !== false && value.expire < now)) {
@@ -34,17 +50,23 @@ module.exports = class {
     } else {
       return value.data;
     }
-  };
+  }
 
   setKey(key, value) {
+    if (this.#verbose === true) {
+      console.log(`TimeCache:setKey(key = ${key}, value = ${value})`);
+    }
     var now = new Date().getTime();
     this.#cache.setKey(key, {
       expire: this.#expire === false ? false : now + this.#expire,
       data: value,
     });
-  };
+  }
 
   save(prune = false) {
+    if (this.#verbose === true) {
+      console.log(`TimeCache:save(prune = ${prune})`);
+    }
     if (prune === true) {
       var now = new Date().getTime();
       for (var obj in this.#cache.all()) {
@@ -55,5 +77,5 @@ module.exports = class {
       }
     }
     this.#cache.save(true);
-  };
+  }
 };

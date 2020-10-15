@@ -9,39 +9,42 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ******************************************************************************/
+// constants
+const MB_IN_BYTES = 1024;
+const DEFAULT_WAIT_PERIOD_IN_MS = 333;
 
 // custom wrappers
 const Wrapper = require('../GitWrapper.js');
 const CachedHttp = require('../HttpWrapper.js');
-const axios = require('axios');
-const parse = require('parse-link-header');
+const EclipseAPI = require('../EclipseAPI.js');
 
 var readline = require('readline');
 
 // create global placeholder for wrapper
 var wrap;
 var cHttp;
+var eclipseApi;
 
 var bots;
 
 // thread sleeping to prevent abuse of API
-var sab = new SharedArrayBuffer(1024);
+var sab = new SharedArrayBuffer(MB_IN_BYTES);
 var int32 = new Int32Array(sab);
-const waitTimeInMS = 333;
+const waitTimeInMS = DEFAULT_WAIT_PERIOD_IN_MS;
 
 // read in secret from command line
 var rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
+rl.question('Please enter your GitHub access token: ', answer => acceptInput(answer));
 
 // best attempt at basic input checking
 function acceptInput(answer) {
   var secret = answer.trim();
-  if (!secret || secret.length == 0) {
+  if (!secret || secret.length === 0) {
     console.log('A token is required to run sync functionality, please try again');
-    return rl.question('Please enter your GitHub access token: ', (answer) => acceptInput(answer));
+    return rl.question('Please enter your GitHub access token: ', a => acceptInput(a));
   }
 
   rl.close();
@@ -49,7 +52,7 @@ function acceptInput(answer) {
 }
 
 async function run(secret) {
-  if (secret == undefined || secret == '') {
+  if (secret === undefined || secret === '') {
     console.log('Could not fetch API secret, exiting');
     return;
   }
@@ -57,13 +60,14 @@ async function run(secret) {
   // build wrapper
   wrap = new Wrapper(secret);
   cHttp = new CachedHttp();
+  eclipseApi = new EclipseAPI();
 
   // get eclipse api data
-  var rawData = await eclipseAPI();
-  var rawBots = await eclipseBots();
+  var rawData = await eclipseApi.eclipseAPI();
+  var rawBots = await eclipseApi.eclipseBots();
 
   var data = retrieveMaintainedOrgsRepos(rawData);
-  bots = processBots(rawBots);
+  bots = eclipseApi.processBots(rawBots);
 
   var auditNotes = [];
   var projects = Object.keys(data);
@@ -79,7 +83,7 @@ async function run(secret) {
         // get list of GitHub collaborators
         var collaborators = await wrap.getRepoCollaborators(org, repo);
         Atomics.wait(int32, 0, 0, waitTimeInMS);
-        if (collaborators == undefined) {
+        if (collaborators === undefined) {
           console.log(`Error while fetching collaborators for ${org}/${repo}`);
           continue;
         }
@@ -93,22 +97,23 @@ async function run(secret) {
   console.log('GITHUB_UNAME,ECLIPSE_UNAME,ORG,REPO,ECA,IS_COMMITTER,IS_PL,READ_ACCESS,WRITE_ACCESS,IS_ADMIN');
   for (var rowIdx in auditNotes) {
     var row = auditNotes[rowIdx];
-    console.log(`${row.github},${row.uname},${row.org},${row.repo},${row.eca},${row.committer},${row.lead},${row.read},${row.write},${row.admin}`);
+    console.log(`${row.github},${row.uname},${row.org},${row.repo},${row.eca},${row.committer},${row.lead},`
+      + `${row.read},${row.write},${row.admin}`);
   }
   cHttp.close();
 }
 
 async function processCollaborators(collaborators, projectId, org, repo) {
-  if (collaborators == undefined || collaborators.length == 0) {
+  if (collaborators === undefined || collaborators.length === 0) {
     return [];
   }
   var audits = [];
   for (var collabIdx in collaborators) {
-    if (collaborators[collabIdx].login == 'eclipsewebmaster') {
+    if (collaborators[collabIdx].login === 'eclipsewebmaster') {
       continue;
     }
     var row = await generateDataRow(collaborators[collabIdx], projectId, org, repo);
-    if (row != undefined) {
+    if (row !== undefined) {
       audits.push(row);
     }
   }
@@ -119,7 +124,7 @@ async function generateDataRow(collaborator, projectId, org, repo) {
   console.log(`Generating row for user ${uname}`);
   var projBots = bots[projectId];
   var uname = collaborator.login;
-  if (projBots == undefined || projBots.indexOf(uname) == -1) {
+  if (projBots === undefined || projBots.indexOf(uname) === -1) {
     // query the Eclipse API to check for corresponding user
     var url = `https://api.eclipse.org/github/profile/${uname}`;
     var result = await cHttp.getData(url);
@@ -132,12 +137,12 @@ async function generateDataRow(collaborator, projectId, org, repo) {
       if (projRels != null && projRels.length > 0) {
         for (var relIdx in projRels) {
           var rel = projRels[relIdx];
-          if (rel['Relation']['Relation'] == 'CM'
-            && rel['Relation']['IsActive'] == '1') {
+          if (rel['Relation']['Relation'] === 'CM'
+            && rel['Relation']['IsActive'] === '1') {
             status = true;
           }
-          if (rel['Relation']['Relation'] == 'PL'
-            && rel['Relation']['IsActive'] == '1') {
+          if (rel['Relation']['Relation'] === 'PL'
+            && rel['Relation']['IsActive'] === '1') {
             lead = true;
           }
         }
@@ -172,62 +177,6 @@ async function generateDataRow(collaborator, projectId, org, repo) {
   }
 }
 
-async function eclipseAPI() {
-  var hasMore = true;
-  var result = [];
-  var data = [];
-  // add timestamp to url to avoid browser caching
-  var url = `https://projects.eclipse.org/api/projects?github_only=1&timestamp=${new Date().getTime()}`;
-  // loop through all available users, and add them to a list to be returned
-  while (hasMore) {
-    console.log('Loading next page...');
-    // get the current page of results, incrementing page count after call
-    result = await axios.get(url).then(r => {
-      // return the data to the user
-      var links = parse(r.headers.link);
-      if (links.self.url == links.last.url) {
-        hasMore = false;
-      } else {
-        url = links.next.url;
-      }
-      return r.data;
-    }).catch(err => console.log(`Error while retrieving results from Eclipse Projects API (${url}): ${err}`));
-
-    // collect the results
-    if (result != null && result.length > 0) {
-      for (var i = 0; i < result.length; i++) {
-        data.push(result[i]);
-      }
-    }
-  }
-  return data;
-}
-
-async function eclipseBots() {
-  var botsRaw = await cHttp.getData('https://api.eclipse.org/bots');
-  if (botsRaw == undefined) {
-    console.log('Could not retrieve bots from API');
-    process.exit(1);
-  }
-  return botsRaw;
-}
-
-function processBots(botsRaw) {
-  var botMap = {};
-  for (var botIdx in botsRaw) {
-    var bot = botsRaw[botIdx];
-    if (bot['github.com'] == undefined) continue;
-
-    var projBots = botMap[bot['projectId']];
-    if (projBots == undefined) {
-      projBots = [];
-    }
-    projBots.push(bot['github.com']['username']);
-    botMap[bot['projectId']] = projBots;
-  }
-  return botMap;
-}
-
 function retrieveMaintainedOrgsRepos(data) {
   // maintain map of orgs to repos
   var orgs = {};
@@ -241,9 +190,9 @@ function retrieveMaintainedOrgsRepos(data) {
     for (var idx in repos) {
       var repoUrl = repos[idx].url;
       // strip the repo url to get the org + repo
-      var match = /\/([^\/]+)\/([^\/]+)\/?$/.exec(repoUrl);
+      var match = /\/([^/]+)\/([^/]+)\/?$/.exec(repoUrl);
       // check to make sure we got a match
-      if (match == null) {
+      if (match === null) {
         continue;
       }
 
@@ -252,7 +201,7 @@ function retrieveMaintainedOrgsRepos(data) {
       var repo = match[2];
 
       var repoList = projMap[org];
-      if (repoList == undefined) {
+      if (repoList === undefined) {
         repoList = [];
       }
       if (!repoList.includes(repo)) {

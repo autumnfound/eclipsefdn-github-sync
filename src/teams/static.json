@@ -1,0 +1,168 @@
+[
+	{
+		"repos": [
+			"https://github.com/EclipseFdn/eclipsefdn-github-sync",
+			"https://github.com/EclipseFdn/events.eclipse.org",
+			"https://github.com/EclipseFdn/iot.eclipse.org",
+			"https://github.com/EclipseFdn/openvsx-publisher-agreement-specs",
+			"https://github.com/EclipseFdn/lts.eclipse.org",
+			"https://github.com/EclipseFdn/solstice-assets",
+			"https://github.com/EclipseFdn/openadx.eclipse.org",
+			"https://github.com/EclipseFdn/hugo-solstice-theme",
+			"https://github.com/EclipseFdn/EFDP",
+			"https://github.com/EclipseFdn/eclipsefdn-foundationdb-api-specs",
+			"https://github.com/EclipseFdn/eclipse.org-research",
+			"https://github.com/EclipseFdn/eclipsefdn-project-adopters",
+			"https://github.com/EclipseFdn/status.eclipse.org",
+			"https://github.com/EclipseFdn/react-eclipsefdn-members",
+			"https://github.com/EclipseFdn/projects-bots-api",
+			"https://github.com/EclipseFdn/sparkplug.eclipse.org",
+			"https://github.com/EclipseFdn/tangle.ee",
+			"https://github.com/EclipseFdn/ecdtools.eclipse.org",
+			"https://github.com/EclipseFdn/eclipsecon.org-archive",
+			"https://github.com/EclipseFdn/openmobility.eclipse.org",
+			"https://github.com/EclipseFdn/dockerfiles",
+			"https://github.com/EclipseFdn/openpass.eclipse.org",
+			"https://github.com/EclipseFdn/edgenative.eclipse.org",
+			"https://github.com/EclipseFdn/science.eclipse.org",
+			"https://github.com/EclipseFdn/gerrit-eca-plugin",
+			"https://github.com/EclipseFdn/git-eca-rest-api",
+			"https://github.com/EclipseFdn/jekyll-theme-eclipsefdn",
+			"https://github.com/EclipseFdn/geoip-rest-api",
+			"https://github.com/EclipseFdn/marketplace-rest-api",
+			"https://github.com/EclipseFdn/marketplace-rest-api-specs",
+			"https://github.com/EclipseFdn/planeteclipse.org",
+			"https://github.com/EclipseFdn/jquery-eclipsefdn-api",
+			"https://github.com/EclipseFdn/opengenesis.eclipse.org",
+			"https://github.com/EclipseFdn/EF-security-policy",
+			"https://github.com/EclipseFdn/cerberus",
+			"https://github.com/EclipseFdn/api.eclipse.org-docs",
+			"https://github.com/EclipseFdn/jenkins-pipeline-shared",
+			"https://github.com/EclipseFdn/eclipse-webhook",
+			"https://github.com/EclipseFdn/eclipsecon-data-scraper",
+			"https://github.com/EclipseFdn/EFSP",
+			"https://github.com/EclipseFdn/fedgeoday",
+			"https://github.com/EclipseFdn/locationtech-events"
+		],
+		"teamName": "eclipsefdn-staff",
+		"members": [
+			{
+				"name": "pbuckd40",
+				"url": "https://api.eclipse.org/account/profile/pbuckd40",
+				"expiration": ""
+			},
+			{
+				"name": "zfazli",
+				"url": "https://api.eclipse.org/account/profile/zfazli",
+				"expiration": ""
+			}
+			{
+				"name": "imaftei",
+				"url": "https://api.eclipse.org/account/profile/imaftei",
+				"expiration": ""
+			},
+			{
+				"name": "vgriffiths",
+				"url": "https://api.eclipse.org/account/profile/vgriffiths",
+				"expiration": ""
+			},
+			{
+				"name": "kmcnaughton",
+				"url": "https://api.eclipse.org/account/profile/kmcnaughton",
+				"expiration": ""
+			},
+			{
+				"name": "jharrisj1m",
+				"url": "https://api.eclipse.org/account/profile/jharrisj1m",
+				"expiration": ""
+			},
+			{
+				"name": "hkellytc5",
+				"url": "https://api.eclipse.org/account/profile/hkellytc5",
+				"expiration": ""
+			},
+			{
+				"name": "malowe",
+				"url": "https://api.eclipse.org/account/profile/malowe",
+				"expiration": ""
+			},
+			{
+				"name": "cguindon",
+				"url": "https://api.eclipse.org/account/profile/cguindon",
+				"expiration": ""
+			},
+			{
+				"name": "epoirier",
+				"url": "https://api.eclipse.org/account/profile/epoirier",
+				"expiration": ""
+			},
+			{
+				"name": "webdev",
+				"url": "https://api.eclipse.org/account/profile/webdev",
+				"expiration": ""
+			},
+			{
+				"name": "webmaster",
+				"url": "https://api.eclipse.org/account/profile/webmaster",
+				"expiration": ""
+			},
+			{
+				"name": "ajacko",
+				"url": "https://api.eclipse.org/account/profile/ajacko",
+				"expiration": ""
+			},
+			{
+				"name": "gblondelle",
+				"url": "https://api.eclipse.org/account/profile/gblondelle",
+				"expiration": ""
+			},
+			{
+				"name": "mbarbero",
+				"url": "https://api.eclipse.org/account/profile/mbarbero",
+				"expiration": ""
+			},
+			{
+				"name": "wbeaton",
+				"url": "https://api.eclipse.org/account/profile/wbeaton",
+				"expiration": ""
+			},
+			{
+				"name": "fgurr",
+				"url": "https://api.eclipse.org/account/profile/fgurr",
+				"expiration": ""
+			},
+			{
+				"name": "fdesbiens",
+				"url": "https://api.eclipse.org/account/profile/fdesbiens",
+				"expiration": ""
+			},
+			{
+				"name": "pkriefrvi",
+				"url": "https://api.eclipse.org/account/profile/pkriefrvi",
+				"expiration": ""
+			},
+			{
+				"name": "siwai",
+				"url": "https://api.eclipse.org/account/profile/siwai",
+				"expiration": ""
+			},
+			{
+				"name": "mjahn0qp",
+				"url": "https://api.eclipse.org/account/profile/mjahn0qp",
+				"expiration": ""
+			},
+			{
+				"name": "bking18m",
+				"url": "https://api.eclipse.org/account/profile/bking18m",
+				"expiration": ""
+			}
+			{
+				"name": "yiliu",
+				"url": "https://api.eclipse.org/account/profile/yiliu",
+				"expiration": ""
+			}
+		],
+		"permission": "TRIAGE",
+		"expiration": ""
+	}
+]
