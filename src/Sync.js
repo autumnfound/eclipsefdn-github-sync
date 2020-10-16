@@ -201,14 +201,16 @@ async function processRepositories(repos, project) {
     // process contributors for the team
     await removeRepoExternalContributors(project, org, repoName);
     if (!argv.d) {
-      // create the repo if it doesn't exist
       try {
-        await wrap.addRepo(org, repoName);
-
         // Ensure that the teams refer to the repo
-        await wrap.addRepoToTeam(org, `${project.project_id}-committers`, repoName, 'push');
-        await wrap.addRepoToTeam(org, `${project.project_id}-contributors`, repoName, 'triage');
-        await wrap.addRepoToTeam(org, `${project.project_id}-project-leads`, repoName, 'maintain');
+        var updatedCommit = await wrap.addRepoToTeam(org, `${project.project_id}-committers`, repoName, 'push');
+        var updatedContrib = await wrap.addRepoToTeam(org, `${project.project_id}-contributors`, repoName, 'triage');
+        var updatedPL = await wrap.addRepoToTeam(org, `${project.project_id}-project-leads`, repoName, 'maintain');
+        if (argv.V === true) {
+          console.log(`Updated commit team: ${JSON.stringify(updatedCommit)}`);
+          console.log(`Updated contrib team: ${JSON.stringify(updatedContrib)}`);
+          console.log(`Updated pl team: ${JSON.stringify(updatedPL)}`);
+        }
       } catch (e) {
         console.log(`Error while updating ${project.project_id}. \n${e}`);
       }
