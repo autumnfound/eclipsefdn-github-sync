@@ -12,7 +12,7 @@ COPY package*.json ./
 RUN npm install
 
 ## Copy over required script files
-COPY ./src/* ./src/
+COPY ./src/ ./src/
 
 ## run the script
 CMD npm start -- --verbose=$VERBOSE_VAL --dryrun=$DRYRUN --deletionDryRun=$DRYRUN_DELETION --tls-min-v1.0
