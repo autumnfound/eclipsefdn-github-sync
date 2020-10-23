@@ -208,7 +208,7 @@ async function processRepositories(repos, project) {
         // Ensure that the teams refer to the repo
         var updatedCommit = await wrap.addRepoToTeam(org, `${project.project_id}-committers`, repoName, 'push');
         var updatedContrib = await wrap.addRepoToTeam(org, `${project.project_id}-contributors`, repoName, 'triage');
-        var updatedPL = await wrap.addRepoToTeam(org, `${project.project_id}-project-leads`, repoName, 'maintain');
+        var updatedPL = await wrap.addRepoToTeam(org, `${project.project_id}-project-leads`, repoName, 'maintain', false);
         if (argv.V === true) {
           console.log(`Attempted update commit team: ${updatedCommit === undefined}`);
           console.log(`Attempted update contrib team: ${updatedContrib === undefined}`);
