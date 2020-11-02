@@ -100,7 +100,7 @@ async function run(secret, eclipseToken) {
   data = eApi.postprocessEclipseData(data, 'gitlab_repos');
 
   // get the bots for the projects
-  var rawBots = await eApi.eclipseBots();
+  var rawBots = await eApi.eclipseBots("gitlab.eclipse.org");
   bots = eApi.processBots(rawBots);
 
   // get all current groups for the instance
@@ -163,7 +163,7 @@ async function run(secret, eclipseToken) {
     }
 
     // remove users that don't match the expected users
-    await removeAdditionalUsers(userList, projGroup);
+    await removeAdditionalUsers(userList, projGroup, project.short_project_id);
 
     // for each of the repos in the Eclipse project, ensure there is a GL
     // project
@@ -184,9 +184,9 @@ async function run(secret, eclipseToken) {
   }
 }
 
-async function removeAdditionalUsers(expectedUsers, group) {
+async function removeAdditionalUsers(expectedUsers, group, projectID) {
   if (argv.V) {
-    console.log(`GitlabSync:removeAdditionalUsers(expectedUsers = ${expectedUsers}, group = ${group})`);
+    console.log(`GitlabSync:removeAdditionalUsers(expectedUsers = ${expectedUsers}, group = ${group}, projectID = ${projectID})`);
   }
   // get the current list of users for the group
   var members = await getGroupMembers(group);
@@ -201,7 +201,8 @@ async function removeAdditionalUsers(expectedUsers, group) {
     var member = members[memberIdx];
     // check access and ensure user isn't an owner
     console.log(`Checking user '${member.username}' access to group '${group.name}'`);
-    if (member.access_level !== ADMIN_PERMISSIONS_LEVEL && expectedUsernames.indexOf(member.username) === -1) {
+    if (member.access_level !== ADMIN_PERMISSIONS_LEVEL && expectedUsernames.indexOf(member.username) === -1
+      && !isBot(member.username, projectID)) {
       if (argv.d) {
         console.log(`Dryrun flag active, would have removed user '${member.username}' from group '${group.name}'`);
         continue;
@@ -217,6 +218,15 @@ async function removeAdditionalUsers(expectedUsers, group) {
       }
     }
   }
+}
+
+function isBot(uname, projectID) {
+  var botList = bots[projectID];
+  // check if the current user is in the current key-values list
+  if (botList !== undefined && botList.indexOf(uname) !== -1) {
+    return true;
+  }
+  return false;
 }
 
 
