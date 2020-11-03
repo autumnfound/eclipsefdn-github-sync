@@ -100,8 +100,8 @@ async function run(secret, eclipseToken) {
   data = eApi.postprocessEclipseData(data, 'gitlab_repos');
 
   // get the bots for the projects
-  var rawBots = await eApi.eclipseBots('gitlab.eclipse.org');
-  bots = eApi.processBots(rawBots);
+  var rawBots = await eApi.eclipseBots();
+  bots = eApi.processBots(rawBots, 'gitlab.eclipse.org');
 
   // get all current groups for the instance
   var groups = await api.Groups.all();
