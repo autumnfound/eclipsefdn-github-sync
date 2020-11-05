@@ -58,8 +58,6 @@ const DEFAULT_ORG_PERMISSIONS = {
   members_can_create_public_repositories: false,
   members_allowed_repository_creation_type: 'none',
 };
-const MB_IN_BYTES = 1024;
-const DEFAULT_WAIT_PERIOD_IN_MS = 500;
 const API_OK_STATUS = 200;
 const EXIT_ERROR_STATE = 1;
 
@@ -73,11 +71,6 @@ var cHttp;
 var eclipseApi;
 var bots;
 var stm;
-
-// thread sleeping to prevent abuse of API
-var sab = new SharedArrayBuffer(MB_IN_BYTES);
-var int32 = new Int32Array(sab);
-const waitTimeInMS = DEFAULT_WAIT_PERIOD_IN_MS;
 
 _prepareSecret();
 
@@ -359,8 +352,6 @@ async function updateTeam(org, teamName, designatedMembers) {
       // remove just the user that matches the username
       members = members.filter(e => e.login.localeCompare(user.github_handle, undefined, { sensitivity: 'base' }));
     }
-    // wait to make sure that we don't abuse GitHub API
-    Atomics.wait(int32, 0, 0, waitTimeInMS);
   }
 
   console.log(`Leftover members: ${JSON.stringify(members)}`);
@@ -455,7 +446,6 @@ async function removeOrgExternalContributors(projects, org) {
   }
   // get the collaborators
   var collaborators = await wrap.getOrgCollaborators(org);
-  Atomics.wait(int32, 0, 0, waitTimeInMS);
   if (collaborators === undefined) {
     console.log(`Error while fetching collaborators for ${org}`);
     return;
