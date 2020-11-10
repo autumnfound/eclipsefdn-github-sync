@@ -45,7 +45,7 @@ const PermissionsEnum = {
       return '30';
     }
   },
-  MAINTAINER: function(serviceType) {
+  MAINTAIN: function(serviceType) {
     if (serviceType === ServiceTypes.GITHUB) {
       return 'maintain';
     } else if (serviceType === ServiceTypes.GITLAB) {
@@ -98,7 +98,7 @@ class StaticTeamManager {
    */
   constructor(additionalTeamData = []) {
     this.extendedTeamData = [];
-    if (additionalTeamData.length === 0 && additionalTeamData.constructor === Array) {
+    if (additionalTeamData.length !== 0 && additionalTeamData instanceof Array) {
       this.extendedTeamData.push(...additionalTeamData);
     }
     this.extendedTeamData.push(...teamData);
@@ -133,13 +133,16 @@ class StaticTeamManager {
           console.log(`Repo '${repo}' in team ${team.teamName} not compatible with current service type ${serviceType}, skipping`);
         }
       }
-      out.push({
-        repos: repos,
-        members: team.members,
-        name: team.teamName,
-        permission: perms,
-        expiration: team.expiration,
-      });
+      // only add if there are repos to handle
+      if (repos.length > 0) {
+        out.push({
+          repos: repos,
+          members: team.members,
+          name: team.teamName,
+          permission: perms,
+          expiration: team.expiration,
+        });
+      }
     }
     return out;
   }
@@ -154,7 +157,7 @@ class StaticTeamManager {
   }
 
   getPermissionsForTeam(team, serviceType) {
-    if (serviceType === undefined) {
+    if (team === null || serviceType === null) {
       return null;
     }
     // iterate over the enum keys to check if
