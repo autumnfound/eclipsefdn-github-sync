@@ -311,7 +311,7 @@ async function getProject(name, parent) {
     console.log(`Creating new project with name '${name}'`);
     // create the request options for the new user
     var opts = {
-      name: name,
+      path: name,
       visibility: 'public',
     };
     if (parent !== undefined) {
@@ -527,7 +527,7 @@ function sanitizeGroupName(pid) {
     console.log(`GitlabSync:sanitizeGroupName(pid = ${pid})`);
   }
   if (pid !== undefined) {
-    return pid.toLowerCase().replace(/[^\s\da-zA-Z-]/g, '-');
+    return pid.toLowerCase().replace(/[^\s\da-zA-Z-\.]/g, '-');
   }
   return '';
 }
