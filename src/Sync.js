@@ -356,7 +356,8 @@ async function updateTeam(org, teamName, designatedMembers) {
     // invite user to team
     await wrap.inviteUserToTeam(org, teamName, user.github_handle);
     if (members !== undefined) {
-      members = members.filter(e => e.login !== user.github_handle);
+      // remove just the user that matches the username
+      members = members.filter(e => e.login.localeCompare(user.github_handle, undefined, { sensitivity: 'base' }));
     }
     // wait to make sure that we don't abuse GitHub API
     Atomics.wait(int32, 0, 0, waitTimeInMS);
