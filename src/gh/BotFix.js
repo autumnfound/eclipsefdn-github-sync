@@ -98,11 +98,11 @@ async function runSync(data, projectBots) {
     }
     await processProject(project, projectBots[pIdx]);
   }
-  console.log(`Invited ${inviteCtr} / ${rawCtr} bots to various teams`)
+  console.log(`Invited ${inviteCtr} / ${rawCtr} bots to various teams`);
 }
 async function processProject(project, bots) {
   if (project === undefined) {
-    console.log(`No project passed, cannot process bots for nothing`);
+    console.log('No project passed, cannot process bots for nothing');
     return;
   }
   // get + sanitize team name for current project in terms of committers
