@@ -65,9 +65,13 @@ class GitlabWrapper {
   Creates a wrapping class that contains logic for common operations in Gitlab when migrating/syncing content.
 
   @param accessToken the generated Gitlab instance, with set host and access token for immediate usage.
+  @param host the host of the Gitlab instance that is being harnessed
+  @param provider the name of the provider that is used to connect the GL instance to the Eclipse Accounts oauth2 server
   @param eclipseAPI reference to an Eclipse API wrapper to fetch data from the Eclipse API for user creation.
+  @param verbose (optional) the verbosity level to use for the GL harness wrapper (defaults to 0, or minimal logging)
+  @param sudo (optional) the user ID or username that will be impersonated in this wrapper (defaults to no impersonation).
    */
-  constructor(accessToken, host, provider, eclipseAPI, verbose = false, sudo = undefined) {
+  constructor(accessToken, host, provider, eclipseAPI, verbose = 0, sudo = undefined) {
     this.#accessToken = accessToken;
     this.#host = host;
     this.#provider = provider;
@@ -235,6 +239,20 @@ class GitlabWrapper {
     }
   }
 
+  async getProject(projectID) {
+    if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
+      console.log(`GitlabWrapper:getProject(projectID = ${projectID})`);
+    }
+
+    try {
+      return await this.#gitlab.Projects.show(projectID);
+    } catch (err) {
+      if (this.#verbose > VERBOSE_SECONDARY_MEDIUM) {
+        console.log(err);
+      }
+    }
+  }
+
   async editProject(projectID, updates = {}) {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
       console.log(`GitlabWrapper:getGroup(projectID = ${projectID}, updates = ${JSON.stringify(updates)})`);
@@ -285,8 +303,8 @@ class GitlabWrapper {
   /**
   Update Gitlab issue with the given properties within the designated project.
 
-  @param {number|string} projectID the project that the issue should be made against
-  @param {string} issueID the internal Issue ID of the ID to be updated
+  @param {number} projectID the project that the issue should be made against
+  @param {number} issueID the internal Issue ID of the ID to be updated
   @param {Record<String, any>} updates the updates to be made in the issue, set in an object
    */
   async editIssue(projectID, issueID, updates) {
@@ -309,8 +327,8 @@ class GitlabWrapper {
   /**
   Create a comment within the designated project issue with given body and date.
 
-  @param {number|string} projectID the project that the issue should be made against
-  @param {number|string} issueID the ID of the issue that this comment is made against
+  @param {number} projectID the project that the issue should be made against
+  @param {number} issueID the ID of the issue that this comment is made against
   @param {string} body the body of the issue comment
   @param {string} createdAt (optional) the date of creation for the issue. ISO 8601 formatted, for example 2021-01-13T01:10:40Z
    */
@@ -328,6 +346,15 @@ class GitlabWrapper {
     }
   }
 
+  /**
+  Adds user to the project with the given permissions and expiration, with a default of contributor permissions and no expiration.
+
+  @param {number} projectID the internal ID of the project that will be updated
+  @param {number} userID the internal ID of the user to be added to the project
+  @param {number} permissions (optional) permission level to grant user on the project. Valid values are 5,10,20,30, and 40.
+  @param {Date} expiration (optional) expiration date of the permission set being granted, granular to the day.
+  @returns {Record<string,any>} returns the user access object for the current project, or undefined if there was an error
+   */
   async addUserToProject(projectID, userID, permissions = CONTRIBUTOR_PERMS_LEVEL, expiration = undefined) {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
       console.log(`GitlabWrapper:addUserToProject(projectID = ${projectID}, userID = ${userID}, permissions = ${permissions},` +
@@ -343,14 +370,18 @@ class GitlabWrapper {
         console.log(e);
       }
     } else {
-      console.log('');
+      console.log(`User with ID '${userID}' not added to project '${projectID}', script is running in dry run and will skip state change`);
     }
   }
 
   /**
-  TODO
+  Uploads a file to Gitlab, associating the file with a project containing the issue that references it.
 
-  @param file base64 encoded file data to be transmitted
+  @param {number} projectID the project to upload this file to (projects own attachments instead of issues)
+  @param {string} file base64 encoded file data to be transmitted
+  @param {string} fileName the name of the file to upload. Will default to the current time if not set
+  @param {Record<string, any>} opts additional request options to pass to the Gitlab request
+  @returns {Promise<Record<string, any>>} returns the uploaded file metadata on successful request, otherwise undefined
    */
   async uploadIssueFile(projectID, file, fileName, opts = {}) {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
@@ -362,12 +393,13 @@ class GitlabWrapper {
           metadata: {
             filename: fileName,
           },
-        }, opts);
+          options: opts,
+        });
       } catch (e) {
         console.log(e);
       }
     } else {
-      console.log('');
+      console.log(`File with name ${fileName} not uploaded, dry run is active and no state changing actions will be performed`);
     }
   }
 

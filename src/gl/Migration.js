@@ -33,7 +33,8 @@ var argv = require('yargs')
   })
   .option('H', {
     alias: 'host',
-    description: 'The Gitlab host target for the migration. This allows for testing and staging migrations for use in development and dry runs.',
+    description: 'The Gitlab host target for the migration. This allows for testing and staging migrations for use in development '
+      + 'and dry runs.',
     default: 'http://gitlab.eclipse.org/',
   })
   .option('b', {
@@ -71,14 +72,16 @@ var argv = require('yargs')
   .argv;
 
 const MAX_FILE_SIZE_IN_KB = 100000;
+const BASE_64_FILE_SIZE_RATIO = 0.75;
 
 const { GitlabWrapper } = require('./GitlabWrapper.js');
 const EclipseAPI = require('../EclipseAPI.js');
 const { SecretReader, getBaseConfig } = require('../SecretReader.js');
 const { BugzillaClient } = require('../bz/client.js');
 
-// matches hashes followed by a number
-const re = /(\s?)#(.)/g;
+// matches hashes followed by a number (used as part to fix comments from BZ)
+const HASH_MATCHING_REGEX = /(\s?)#(.)/g;
+const HASH_MATCHING_REPLACEMENT = '$1# $2';
 
 let bugzilla, gitlab, eclipse;
 let userCache = {
@@ -134,16 +137,25 @@ async function run(accessToken, eclipseConfig, bzToken) {
   }
   let bugs = await bugzilla.getBugs(argv.P, argv.c, filter);
   console.log(`Found ${bugs.length} to migrate to project with ID ${argv.t}`);
-  // collect unique users in the bugs to ensure users are created in GL
-  for (let i in bugs) {
-    let bug = bugs[i];
-    let comments = await bugzilla.getCommentsForBug(bug.id);
-    if (comments === undefined) {
-      console.log(`Did not find any comments to migrate for issue ${bug.id}`);
-      continue;
+  try {
+    // set the project to not notify users of updates 
+    console.log('Disabling email notifications during migration');
+    await gitlab.editProject(argv.t, { emails_disabled: true });
+    for (let i in bugs) {
+      let bug = bugs[i];
+      let comments = await bugzilla.getCommentsForBug(bug.id);
+      if (comments === undefined) {
+        console.log(`Did not find any comments to migrate for issue ${bug.id}`);
+        continue;
+      }
+      await processBZIssue(bug, comments);
     }
-    await processBZIssue(bug, comments);
+  } catch (err) {
+    console.log('Error while processing issues');
   }
+  // reenable emails for the project once finished migration
+  console.log('Reenabling email notifications after migration');
+  await gitlab.editProject(argv.t, { emails_disabled: false });
 }
 
 async function processBZIssue(bug, comments) {
@@ -155,25 +167,7 @@ async function processBZIssue(bug, comments) {
     var sudo = await gitlab.getImpersonatedWrapper(commenter.name);
 
     // check if there is an attachment associated with current comment and handle it
-    let uploadedFile;
-    if (comment.attachment_id !== undefined && comment.attachment_id !== null) {
-      console.log(`Found attachment linked to comment ${comment.attachment_id}, fetching!`);
-      let attachment = await bugzilla.getAttachment(comment.attachment_id);
-      // approximate size of file based on base64 encoding
-      // This seems to be the same size on both sides (https://bugs.eclipse.org/bugs/show_bug.cgi?id=415041) so this should be safe
-      // already, but better check than waste network time on too large files
-      let sizeInKB = attachment.data.length * 0.75;
-      if (sizeInKB > MAX_FILE_SIZE_IN_KB) {
-        console.log(`Attachment with ID ${comment.attachment_id} is greater than the allowed file size (~ ${sizeInKB}KB), not attaching`);
-      } else {
-        console.log(`Uploading attachment linked to comment ${comment.attachment_id} with name ${attachment.file_name}`);
-        uploadedFile = await gitlab.uploadIssueFile(argv.t, attachment.data, attachment.file_name);
-        if (uploadedFile === undefined) {
-          console.log(`Could not upload file ${attachment.file_name} associated to comment ${comment.id}`);
-        }
-      }
-    }
-
+    let uploadedFile = await uploadFile(comment);
     // first comment should be issue description, so treat it differently
     if (k === '0') {
       console.log(`Creating base issue for bug ${bug.id} with comment ${comment.id}`);
@@ -192,7 +186,8 @@ async function processBZIssue(bug, comments) {
       }
     }
   }
-  if (issue !== undefined && issue !== null && (bug.status === 'RESOLVED' || bug.status === 'CLOSED')) {
+  // if we are importing closed issues, check if the current issue to see if its closed and close the GL issue
+  if (issue !== undefined && issue !== null && (bug.status === 'RESOLVED' || bug.status === 'CLOSED' || bug.stats === 'VERIFIED')) {
     let closedIssue = await gitlab.editIssue(argv.t, issue.iid, {
       state_event: 'close',
     });
@@ -200,11 +195,34 @@ async function processBZIssue(bug, comments) {
   }
 }
 
+async function uploadFile(comment) {
+  // check if there is a file to attach to the 
+  if (comment.attachment_id !== undefined && comment.attachment_id !== null) {
+    console.log(`Found attachment linked to comment ${comment.attachment_id}, fetching!`);
+    let attachment = await bugzilla.getAttachment(comment.attachment_id);
+    // approximate size of file based on base64 encoding
+    // This seems to be the same size on both sides (https://bugs.eclipse.org/bugs/show_bug.cgi?id=415041) so this should be safe
+    // already, but better check than waste network time on too large files
+    let sizeInKB = attachment.data.length * BASE_64_FILE_SIZE_RATIO;
+    if (sizeInKB > MAX_FILE_SIZE_IN_KB) {
+      console.log(`Attachment with ID ${comment.attachment_id} is greater than the allowed file size (~ ${sizeInKB}KB), not attaching`);
+    } else {
+      console.log(`Uploading attachment linked to comment ${comment.attachment_id} with name ${attachment.file_name}`);
+      try {
+        return await gitlab.uploadIssueFile(argv.t, attachment.data, attachment.file_name);
+      } catch (err) {
+        console.log(err);
+        console.log(`Could not upload file ${attachment.file_name} associated to comment ${comment.id}`);
+      }
+    }
+  }
+}
+
 function getCommentText(bug, comment, attachment) {
   let formattedText = comment.raw_text;
 
   // replace number formats that create bad issue links with separated text
-  formattedText = formattedText.replaceAll(re, '$1# $2');
+  formattedText = formattedText.replaceAll(HASH_MATCHING_REGEX, HASH_MATCHING_REPLACEMENT);
 
   return `_Originally posted: [${comment.time} on ${bug.id}](${getCommentLocation(bug, comment)})_\n\n`
     + (attachment === undefined ? formattedText : attachment.markdown + '\n' + formattedText);
