@@ -140,6 +140,11 @@ class GitlabWrapper {
   }
 
 
+  /**
+  Gets the best matching group for the given name.
+  
+  @param groupName the name of the group to retrieve
+   */
   async getGroup(groupName) {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
       console.log(`GitlabWrapper:getGroup(groupName = ${groupName})`);
@@ -147,6 +152,16 @@ class GitlabWrapper {
     return await this.#gitlab.Groups.search(groupName);
   }
 
+  /**
+  Creates group with given name, path and parent. Additional options can be passed to either supplement or replace the default values.
+  
+  @param {string} name the name of the group to create
+  @param {string} path the desired URL path for the new group
+  @param {number} parent (optional) the ID of the group that should own this group
+  @param {Record<string,any>} opts (optional) additional properties to set on the new group. These properties should map to properties that
+    can be set through the Group create API.
+  @returns the new group that was created, or undefined if there was an issue
+   */
   async createGroup(name, path, parent, opts = {}) {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
       console.log(`GitlabSync:createGroup(name = ${name}, path = ${path}, parent = ${parent}, opts = ${JSON.stringify(opts)})`);
@@ -185,6 +200,12 @@ class GitlabWrapper {
     }
   }
 
+  /**
+  Removes the group from Gitlab. The contained projects will be marked for deletion by Gitlab upon the request, so caution is
+  recommended using this call.
+  
+  @param {number} groupID the ID of the group that should be removed
+   */
   async removeGroup(groupID) {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
       console.log(`GitlabWrapper:removeGroup(groupID = ${groupID})`);
@@ -198,10 +219,19 @@ class GitlabWrapper {
         }
       }
     } else {
-      console.log('');
+      console.log(`Call to delete group ${groupID} will be skipped, script is currently running in dry run`);
     }
   }
 
+  /**
+    Adds a user to a group with given permissions and expiration set.
+  
+    @param {number} groupID the internal ID of the group that will be updated
+    @param {number} userID the internal ID of the user to be added to the group
+    @param {number} permissions (optional) permission level to grant user in the group. Valid values are 5,10,20,30, and 40.
+    @param {Date} expiration (optional) expiration date of the permission set being granted, granular to the day.
+    @returns {Record<string,any>} returns the user access object for the current project, or undefined if there was an error
+   */
   async addUserToGroup(groupID, userID, access = CONTRIBUTOR_PERMS_LEVEL, expiration = undefined) {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
       console.log(`GitlabWrapper:addUserToGroup(groupID = ${groupID}, userID = ${userID}, access = ${access})`);
@@ -217,11 +247,20 @@ class GitlabWrapper {
         }
       }
     } else {
-      console.log('');
+      console.log(`User with ID '${userID}' not added to group '${groupID}' with permission level ${access}, script is running in `
+        + 'dry run and will skip state change');
     }
-
   }
 
+  /**
+  Shares a project with a given group at a set permission level (defaults to contributor level).
+
+  @param {number} projectID the project that should be shared
+  @param {number} groupID the internal ID of the group to gain access to the project
+  @param {number} permissions (optional) permission level to grant the group on the project. Valid values are 5, 10, 20, 30, and 40.
+  @param {Date} expiration (optional) expiration date of the permission set being granted, granular to the day.
+   
+   */
   async shareProjectWithGroup(projectID, groupID, access = COMMITTER_PERMS_LEVEL) {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
       console.log(`GitlabWrapper:shareProjectWithGroup(projectID = ${projectID}, groupID = ${groupID}, access = ${access})`);
@@ -235,27 +274,20 @@ class GitlabWrapper {
         }
       }
     } else {
-      console.log('');
+      console.log(`Project with ID '${projectID}' not shared with groupID '${groupID}' at permission level ${access}, script is running`
+        + ' in dry run and will skip state change');
     }
   }
 
-  async getProject(projectID) {
-    if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
-      console.log(`GitlabWrapper:getProject(projectID = ${projectID})`);
-    }
+  /**
+  Updates the given projects with the fields set within the updates object.
 
-    try {
-      return await this.#gitlab.Projects.show(projectID);
-    } catch (err) {
-      if (this.#verbose > VERBOSE_SECONDARY_MEDIUM) {
-        console.log(err);
-      }
-    }
-  }
-
+  @param {number|string} projectID the project that the issue should be made against
+  @param {Record<String, any>} updates the updates to be made in the project, set in an object
+   */
   async editProject(projectID, updates = {}) {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
-      console.log(`GitlabWrapper:getGroup(projectID = ${projectID}, updates = ${JSON.stringify(updates)})`);
+      console.log(`GitlabWrapper:editProject(projectID = ${projectID}, updates = ${JSON.stringify(updates)})`);
     }
     if (!this.#dryRun) {
       try {
@@ -266,7 +298,7 @@ class GitlabWrapper {
         }
       }
     } else {
-      console.log('');
+      console.log(`Project with ID '${projectID}' not updated, script is running in dry run and will skip state change`);
     }
   }
 
@@ -280,8 +312,8 @@ class GitlabWrapper {
    */
   async createIssue(projectID, title, description, createdAt) {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
-      console.log(`GitlabWrapper:createIssue(projectID = ${projectID}, title = ${title}, description = ${description},
-         createdAt = ${createdAt})`);
+      console.log(`GitlabWrapper:createIssue(projectID = ${projectID}, title = ${title}, description = ${description},`
+        + `createdAt = ${createdAt})`);
     }
     if (!this.#dryRun) {
       try {
@@ -296,7 +328,7 @@ class GitlabWrapper {
         }
       }
     } else {
-      console.log('');
+      console.log(`Issue not added to project '${projectID}', script is running in dry run and will skip state change`);
     }
   }
 
@@ -320,7 +352,7 @@ class GitlabWrapper {
         }
       }
     } else {
-      console.log('');
+      console.log(`Issue with ID '${issueID}' in project ${projectID} not updated, script is running in dry run and will skip state change`);
     }
   }
 
@@ -342,7 +374,8 @@ class GitlabWrapper {
         createdAt: createdAt,
       });
     } else {
-      console.log('');
+      console.log(`Comment with body '${body}' not created for issue '${issueID}' in project ${projectID}, script is running in dry run `
+        + 'and will skip state change');
     }
   }
 
@@ -360,6 +393,7 @@ class GitlabWrapper {
       console.log(`GitlabWrapper:addUserToProject(projectID = ${projectID}, userID = ${userID}, permissions = ${permissions},` +
         `expiration = ${expiration})`);
     }
+    // add additional options for expiration of permissions
     let opts = {
       expires_at: expiration ? expiration.toISOString() : undefined,
     };
@@ -389,6 +423,8 @@ class GitlabWrapper {
     }
     if (!this.#dryRun) {
       try {
+        // filename is set within nested metadata, while other options are on the options property
+        // files need to be buffered into an octet stream (the default post strategy)
         return await this.#gitlab.Projects.upload(projectID, Buffer.from(file, 'base64'), {
           metadata: {
             filename: fileName,
@@ -445,5 +481,5 @@ function createAdminGitlab(accessToken, host, sudo) {
     console.log('Could not find the GitLab access token, returning');
   }
 }
+// export the gitlab wrapper without access to helper to create base objects
 module.exports.GitlabWrapper = GitlabWrapper;
-module.exports.createAdminGitlab = createAdminGitlab;

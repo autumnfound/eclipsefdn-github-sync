@@ -100,6 +100,7 @@ function _prepareSecret() {
   if (argv.s !== undefined) {
     settings.root = argv.s;
   }
+  // get all of the required secrets
   var reader = new SecretReader(settings);
   var accessToken = reader.readSecret('gl-access-token');
   var eclipseConfig = reader.readSecret('eclipse-oauth-config');
@@ -112,9 +113,11 @@ function _prepareSecret() {
 }
 
 async function run(accessToken, eclipseConfig, bzToken) {
+  // set up api access needed for 3 systems
   eclipse = new EclipseAPI(JSON.parse(eclipseConfig));
   gitlab = new GitlabWrapper(accessToken, argv.H, argv.p, eclipse);
   bugzilla = new BugzillaClient(argv.b, bzToken);
+  // set the verbosity in each of the API wrappers
   if (argv.V > 0) {
     eclipse.verbose = argv.V;
     gitlab.verbose = argv.V;
@@ -163,6 +166,7 @@ async function processBZIssue(bug, comments) {
   console.log(`Migrating comments for issue ${bug.id}`);
   for (let k in comments) {
     let comment = comments[k];
+    // get user and gitlab wrap for the user
     var commenter = await getCachedUser(comment.creator);
     var sudo = await gitlab.getImpersonatedWrapper(commenter.name);
 
@@ -220,7 +224,6 @@ async function uploadFile(comment) {
 
 function getCommentText(bug, comment, attachment) {
   let formattedText = comment.raw_text;
-
   // replace number formats that create bad issue links with separated text
   formattedText = formattedText.replaceAll(HASH_MATCHING_REGEX, HASH_MATCHING_REPLACEMENT);
 
@@ -233,6 +236,7 @@ function getCommentLocation(bug, comment) {
   return argv.b.endsWith('/') ? argv.b + path : argv.b + '/' + path;
 }
 
+// Cache users to reduce calls to Eclipse API for users that won't change and be called multiple times
 async function getCachedUser(mail) {
   if (argv.V > 1) {
     console.log(`Migration:getCachedUser(mail = ${mail})`);
