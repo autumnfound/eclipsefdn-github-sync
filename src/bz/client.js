@@ -29,6 +29,16 @@ class BugzillaClient {
   get verbose() {
     return this.#verbose;
   }
+  /** Whether the wrapper should action write operations */
+  #dryRun;
+  set dryRun(val) {
+    if (typeof val === 'boolean') {
+      this.#dryRun = val;
+    }
+  }
+  get dryRun() {
+    return this.#dryRun;
+  }
 
   constructor(serverHost, apiKey) {
     this.#apiKey = apiKey;
@@ -70,6 +80,54 @@ class BugzillaClient {
       }
     }
     return out;
+  }
+
+
+  async editIssue(bugID, opts) {
+    if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
+      console.log(`BugzillaClient::editIssue(bugID = ${bugID}, opts = ${JSON.stringify(opts)})`);
+    }
+    // set up params for the current call
+    if (!this.#dryRun) {
+      return await axios.put(getURL(this.#serverHost, 'rest/bug/' + bugID), {
+        params: {
+          api_key: this.#apiKey,
+        },
+        body: opts,
+      }).then(r => {
+        // log HTTP response for successful requests when verbose enabled
+        if (this.#verbose > VERBOSE_SECONDARY_MEDIUM) {
+          console.log(r);
+        }
+        return r.data;
+      }).catch(err => {
+        console.log(err);
+      });
+    }else {
+      console.log(`Update to bug ${bugID} with options ${JSON.stringify(opts)} not completed, dry run is enabled`);
+    }
+  }
+
+  /**
+  Close the given issue, given the new location of the bugs information.
+
+  @param bugID the bug that was migrated
+  @param projectID
+  @param url
+   */
+  async migrateIssue(bugID, projectID, url) {
+    if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
+      console.log(`BugzillaClient::migrateIssue(bugID = ${bugID}, projectID = ${projectID}, url = ${url})`);
+    }
+    // act as an alias to allow ease of closing issues
+    return await editIssue(bugID, {
+      comment: {
+        body: `Issue has been migrated to Gitlab to project [${projectID}](${url})`,
+        markdown: true,
+      },
+      status: 'RESOLVED',
+      resolution: 'MOVED',
+    });
   }
 
   async getCommentsForBug(bugID, filters) {
@@ -156,6 +214,7 @@ class BugzillaClient {
       console.log(err);
     }
   }
+
 }
 /**
 Helper method to format URL, allowing for additional slash on URL if set.

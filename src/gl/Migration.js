@@ -123,6 +123,8 @@ async function run(accessToken, eclipseConfig, bzToken) {
     gitlab.verbose = argv.V;
     bugzilla.verbose = argv.V;
   }
+  gitlab.dryRun = argv.d;
+  bugzilla.dryRun = argv.d;
 
   // get all bugs for current product + components
   console.log(`Fetching bugs associated with product '${argv.P}' and component '${argv.c}'`);
@@ -196,6 +198,13 @@ async function processBZIssue(bug, comments) {
       state_event: 'close',
     });
     console.log(`Closed issue ${closedIssue.id}`);
+  }
+  // close the BZ issue fter migration
+  let bugStatus = await bugzilla.migrateIssue(bug.id, argv.t, issue.web_url);
+  if (bugStatus !== undefined) {
+    console.log(`Bug ${bug.id} migrated successfully to Gitlab`);
+  } else {
+    console.log(`Could not close bug ${bug.id}`);
   }
 }
 
