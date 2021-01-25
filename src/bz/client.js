@@ -103,7 +103,7 @@ class BugzillaClient {
       }).catch(err => {
         console.log(err);
       });
-    }else {
+    } else {
       console.log(`Update to bug ${bugID} with options ${JSON.stringify(opts)} not completed, dry run is enabled`);
     }
   }
@@ -120,7 +120,7 @@ class BugzillaClient {
       console.log(`BugzillaClient::migrateIssue(bugID = ${bugID}, projectID = ${projectID}, url = ${url})`);
     }
     // act as an alias to allow ease of closing issues
-    return await editIssue(bugID, {
+    return await this.editIssue(bugID, {
       comment: {
         body: `Issue has been migrated to Gitlab to project [${projectID}](${url})`,
         markdown: true,

@@ -142,7 +142,7 @@ class GitlabWrapper {
 
   /**
   Gets the best matching group for the given name.
-  
+
   @param groupName the name of the group to retrieve
    */
   async getGroup(groupName) {
@@ -154,7 +154,7 @@ class GitlabWrapper {
 
   /**
   Creates group with given name, path and parent. Additional options can be passed to either supplement or replace the default values.
-  
+
   @param {string} name the name of the group to create
   @param {string} path the desired URL path for the new group
   @param {number} parent (optional) the ID of the group that should own this group
@@ -203,7 +203,7 @@ class GitlabWrapper {
   /**
   Removes the group from Gitlab. The contained projects will be marked for deletion by Gitlab upon the request, so caution is
   recommended using this call.
-  
+
   @param {number} groupID the ID of the group that should be removed
    */
   async removeGroup(groupID) {
@@ -225,7 +225,7 @@ class GitlabWrapper {
 
   /**
     Adds a user to a group with given permissions and expiration set.
-  
+
     @param {number} groupID the internal ID of the group that will be updated
     @param {number} userID the internal ID of the user to be added to the group
     @param {number} permissions (optional) permission level to grant user in the group. Valid values are 5,10,20,30, and 40.
@@ -259,7 +259,6 @@ class GitlabWrapper {
   @param {number} groupID the internal ID of the group to gain access to the project
   @param {number} permissions (optional) permission level to grant the group on the project. Valid values are 5, 10, 20, 30, and 40.
   @param {Date} expiration (optional) expiration date of the permission set being granted, granular to the day.
-   
    */
   async shareProjectWithGroup(projectID, groupID, access = COMMITTER_PERMS_LEVEL) {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
@@ -352,7 +351,8 @@ class GitlabWrapper {
         }
       }
     } else {
-      console.log(`Issue with ID '${issueID}' in project ${projectID} not updated, script is running in dry run and will skip state change`);
+      console.log(`Issue with ID '${issueID}' in project ${projectID} not updated, script is running in dry run`
+        + ' and will skip state change');
     }
   }
 

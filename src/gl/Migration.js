@@ -143,7 +143,7 @@ async function run(accessToken, eclipseConfig, bzToken) {
   let bugs = await bugzilla.getBugs(argv.P, argv.c, filter);
   console.log(`Found ${bugs.length} to migrate to project with ID ${argv.t}`);
   try {
-    // set the project to not notify users of updates 
+    // set the project to not notify users of updates
     console.log('Disabling email notifications during migration');
     await gitlab.editProject(argv.t, { emails_disabled: true });
     for (let i in bugs) {
@@ -209,7 +209,7 @@ async function processBZIssue(bug, comments) {
 }
 
 async function uploadFile(comment) {
-  // check if there is a file to attach to the 
+  // check if there is a file to attach to the comment/issue
   if (comment.attachment_id !== undefined && comment.attachment_id !== null) {
     console.log(`Found attachment linked to comment ${comment.attachment_id}, fetching!`);
     let attachment = await bugzilla.getAttachment(comment.attachment_id);
