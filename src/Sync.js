@@ -301,7 +301,7 @@ async function processOrg(org, team) {
   var teamName = wrap.sanitizeTeamName(team.name);
   // create the teams for the current org
   if (!argv.d) {
-    await updateTeam(org, teamName, team.members);
+    await updateTeam(org, teamName, team.members, project);
   } else {
     console.log(`Dry run set, not adding team '${teamName}' for org: ${org}`);
     if (argv.V) {
@@ -316,10 +316,10 @@ async function updateProjectTeam(org, project, grouping) {
   }
   var projectID = project.project_id;
   var teamName = wrap.sanitizeTeamName(`${projectID}-${grouping}`);
-  updateTeam(org, teamName, project[grouping]);
+  updateTeam(org, teamName, project[grouping], project);
 }
 
-async function updateTeam(org, teamName, designatedMembers) {
+async function updateTeam(org, teamName, designatedMembers, project) {
   if (argv.V === true) {
     console.log(`Sync:updateTeam(org = ${org}, teamName = ${teamName}, designatedMembers = ${JSON.stringify(designatedMembers)})`);
   }
@@ -367,16 +367,12 @@ async function updateTeam(org, teamName, designatedMembers) {
   }
 
   console.log(`Leftover members: ${JSON.stringify(members)}`);
-  // Commented out until Eclipse API endpoint exists to get user for github
-  // handle
   if (members !== undefined) {
+    // for each left over member, check if its a bot
     for (var i = 0; i < members.length; i++) {
-      var url = `https://api.eclipse.org/github/profile/${members[i].login}`;
-      var r = await axios.get(url).then(result => {
-        return result.data;
-      }).catch(err => console.log(`Received error from Eclipse API querying for '${url}': ${err}`));
-      // check that we know the user before removing
-      if (r !== undefined && r['github_handle'] === members[i].login) {
+      // bot check before deletion, skipping if user is bot
+      var isBot = isUserBot(members[i].login, project);
+      if (!isBot) {
         if (argv.D !== true) {
           console.log(`Removing '${members[i].login}' from team '${teamName}'`);
           await wrap.removeUserFromTeam(org, teamName, members[i].login);
@@ -384,7 +380,7 @@ async function updateTeam(org, teamName, designatedMembers) {
           console.log(`Would have deleted '${members[i].login}', but in semi-dry run mode`);
         }
       } else {
-        console.log(`Could not identify '${members[i].login}' from team '${teamName}', skipping`);
+        console.log(`User ${members[i].login} is a bot, skipping`);
       }
     }
   }
@@ -511,4 +507,14 @@ async function removeOrgExternalContributors(projects, org) {
       console.log(`Dry run set, would have removing user '${uname}' from collaborators on ${org}`);
     }
   }
+}
+
+function isUserBot(uname, project) {
+  var botList = bots[project.project_id];
+  // check if the current user is in the current key-values list for project
+  if (botList.indexOf(uname) !== -1) {
+    console.log(`Found user '${uname}' in bot list for project '${project.project_id}'`);
+    return true;
+  }
+  return false;
 }
