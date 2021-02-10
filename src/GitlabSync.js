@@ -508,7 +508,7 @@ function getUserList(project) {
     if (!keys.contains(project.project_lead[plIdx].username)) {
       l[project.project_lead[plIdx].username] = {
         url: project.project_lead[plIdx].url,
-        access_level: 20,
+        access_level: 40,
       };
     }
   }
