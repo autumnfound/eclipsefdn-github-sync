@@ -59,6 +59,7 @@ const DEFAULT_ORG_PERMISSIONS = {
   members_allowed_repository_creation_type: 'none',
 };
 const API_OK_STATUS = 200;
+const API_MISSING_STATUS = 404;
 const EXIT_ERROR_STATE = 1;
 
 const axios = require('axios');
@@ -334,6 +335,9 @@ async function updateTeam(org, teamName, designatedMembers) {
     var userRequest = await cHttp.getRaw(designatedMembers[idx].url);
     if (userRequest.response !== undefined && userRequest.response.data === 'User not found.') {
       console.log(`User '${designatedMembers[idx].name}' had no associated data on Eclipse API`);
+      continue;
+    } else if (userRequest.status === API_MISSING_STATUS) {
+      console.log(`No user data could be retrieved for ${designatedMembers[idx].url}`);
       continue;
     } else if (userRequest.status !== API_OK_STATUS) {
       console.log(`Error while fetching data for ${designatedMembers[idx].url}, ending all processing`);
