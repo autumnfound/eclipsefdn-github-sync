@@ -47,9 +47,19 @@ var argv = require('yargs')
     description: 'The OAuth provider name set in GitLab for the Eclipse Accounts binding',
     default: 'oauth2_generic',
   })
+  .option('r', {
+    alias: 'resolution',
+    description: 'The resolution to set for migrated Bugzilla issues within bugzilla',
+    defaultValue:'MOVED',
+  })
   .option('s', {
     alias: 'secretLocation',
     description: 'The location of the files containing API access tokens and secure configurations containing keys',
+  })
+  .option('S', {
+    alias: 'status',
+    description: 'The status to set for migrated Bugzilla issues within bugzilla',
+    defaultValue:'RESOLVED',
   })
   .option('c', {
     alias: 'component',
@@ -157,6 +167,7 @@ async function run(accessToken, eclipseConfig, bzToken) {
     }
   } catch (err) {
     console.log('Error while processing issues');
+    console.error(err);
   }
   // reenable emails for the project once finished migration
   console.log('Reenabling email notifications after migration');
@@ -200,7 +211,7 @@ async function processBZIssue(bug, comments) {
     console.log(`Closed issue ${closedIssue.id}`);
   }
   // close the BZ issue fter migration
-  let bugStatus = await bugzilla.migrateIssue(bug.id, argv.t, issue.web_url);
+  let bugStatus = await bugzilla.migrateIssue(bug.id, argv.t, issue.web_url, argv.S, argv.r);
   if (bugStatus !== undefined) {
     console.log(`Bug ${bug.id} migrated successfully to Gitlab`);
   } else {
@@ -232,10 +243,12 @@ async function uploadFile(comment) {
 }
 
 function getCommentText(bug, comment, attachment) {
-  let formattedText = comment.raw_text;
-  // replace number formats that create bad issue links with separated text
-  formattedText = formattedText.replaceAll(HASH_MATCHING_REGEX, HASH_MATCHING_REPLACEMENT);
-
+  console.log(comment.text);
+  let formattedText = comment.text;
+  if (formattedText !== undefined) {
+    // replace number formats that create bad issue links with separated text
+    formattedText = formattedText.replace(HASH_MATCHING_REGEX, HASH_MATCHING_REPLACEMENT);
+  }
   return `_Originally posted: [${comment.time} on ${bug.id}](${getCommentLocation(bug, comment)})_\n\n`
     + (attachment === undefined ? formattedText : attachment.markdown + '\n' + formattedText);
 }

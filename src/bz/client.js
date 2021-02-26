@@ -90,10 +90,11 @@ class BugzillaClient {
     // set up params for the current call
     if (!this.#dryRun) {
       return await axios.put(getURL(this.#serverHost, 'rest/bug/' + bugID), {
+        ...opts,
+      }, {
         params: {
           api_key: this.#apiKey,
-        },
-        body: opts,
+        }
       }).then(r => {
         // log HTTP response for successful requests when verbose enabled
         if (this.#verbose > VERBOSE_SECONDARY_MEDIUM) {
@@ -115,7 +116,7 @@ class BugzillaClient {
   @param projectID
   @param url
    */
-  async migrateIssue(bugID, projectID, url) {
+  async migrateIssue(bugID, projectID, url, status = 'RESOLVED', resolution = 'MOVED') {
     if (this.#verbose > VERBOSE_SECONDARY_BASIC) {
       console.log(`BugzillaClient::migrateIssue(bugID = ${bugID}, projectID = ${projectID}, url = ${url})`);
     }
@@ -123,10 +124,10 @@ class BugzillaClient {
     return await this.editIssue(bugID, {
       comment: {
         body: `Issue has been migrated to Gitlab to project [${projectID}](${url})`,
-        markdown: true,
+        is_markdown: true,
       },
-      status: 'RESOLVED',
-      resolution: 'MOVED',
+      status: status,
+      resolution: resolution,
     });
   }
 
