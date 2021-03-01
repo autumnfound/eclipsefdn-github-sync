@@ -27,6 +27,10 @@ var argv = require('yargs')
     description: 'The OAuth provider name set in GitLab',
     default: 'oauth2_generic',
   })
+  .option('P', {
+    alias: 'project',
+    description: 'The short project ID of the target for the current sync run',
+  })
   .option('s', {
     alias: 'secretLocation',
     description: 'The location of the access-token file containing an API access token',
@@ -133,6 +137,10 @@ async function run(secret, eclipseToken) {
 
   for (projectIdx in data) {
     var project = data[projectIdx];
+    if (argv.P !== undefined && project.short_project_id !== argv.P) {
+      console.log(`Project target set ('${argv.P}'). Skipping non-matching project ID ${project.short_project_id}`);
+      continue;
+    }
     console.log(`Processing '${project.short_project_id}'`);
     // fetch project group from results, create if missing
     var projGroup = await getGroup(project.name, project.short_project_id, g);
