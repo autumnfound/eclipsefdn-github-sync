@@ -40,6 +40,10 @@ var argv = require('yargs')
     description: 'Runs the script in a semi-dryrun state to prevent deletions of users',
     boolean: true,
   })
+  .option('p', {
+    alias: 'project',
+    description: 'The project ID that should be targeted for this sync run',
+  })
   .option('s', {
     alias: 'secretLocation',
     description: 'The location of the access-token file containing an API access token',
@@ -141,6 +145,10 @@ async function runSync(data) {
     var project = data[key];
     var projectID = project.project_id;
     var repos = project.github_repos;
+    if (argv.p !== undefined && projectID !== argv.p) {
+      console.log(`Project target set ('${argv.p}'). Skipping non-matching project ${projectID}`);
+      continue;
+    }
     console.log(`Project ID: ${projectID}`);
 
     // maintain orgs used by this project
