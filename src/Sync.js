@@ -318,7 +318,7 @@ async function updateTeam(org, teamName, designatedMembers) {
   console.log(`Syncing team '${teamName}' for organization ${org}`);
   var team = await wrap.addTeam(org, teamName);
   // set team to private
-  await wrap.editTeam(org, teamName, { privacy: 'secret' });
+  await wrap.editTeam(org, teamName, { privacy: 'closed' });
   var members = await wrap.getTeamMembers(org, team);
 
   console.log(`${teamName} members: ${JSON.stringify(designatedMembers)}`);
