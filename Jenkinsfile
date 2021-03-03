@@ -60,7 +60,7 @@ pipeline {
 
     stage('Push docker image') {
       when {
-        branch 'master'
+        branch 'production'
       }
       agent {
         label 'docker-build'
@@ -79,7 +79,7 @@ pipeline {
 
     stage('Deploy to cluster') {
       when {
-        branch 'master'
+        branch 'production'
       }
       steps {
         container('kubectl') {
