@@ -62,6 +62,9 @@ module.exports = class EclipseAPI {
         github_repos: [{
           url: 'https://github.com/eclipsefdn-webdev/spider-pig',
         }],
+        gitlab_repos: [{
+          url: 'https://gitlab.eclipse.org/eclipsefdn/webdev/gitlab-testing',
+        }],
         contributors: [],
         committers: [{
           username: 'malowe',
