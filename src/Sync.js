@@ -513,7 +513,7 @@ function isUserBot(uname, project) {
   if (project !== undefined) {
     var botList = bots[project.project_id];
     // check if the current user is in the current key-values list for project
-    if (botList.indexOf(uname) !== -1) {
+    if (botList && botList.indexOf(uname) !== -1) {
       console.log(`Found user '${uname}' in bot list for project '${project.project_id}'`);
       return true;
     }
