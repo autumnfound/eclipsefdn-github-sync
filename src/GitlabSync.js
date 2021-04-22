@@ -493,7 +493,7 @@ async function getGroupMembers(group) {
 
 function getUserList(project) {
   if (argv.V) {
-    console.log(`GitlabSync:getUserList(project = ${project})`);
+    console.log(`GitlabSync:getUserList(project = ${JSON.stringify(project)})`);
   }
   var l = {};
   // add the contributors with reporter access
@@ -511,9 +511,9 @@ function getUserList(project) {
     };
   }
   // add the project leads not yet tracked with reporter access
-  for (var plIdx in project.project_lead) {
-    l[project.project_lead[plIdx].username] = {
-      url: project.project_lead[plIdx].url,
+  for (var plIdx in project.project_leads) {
+    l[project.project_leads[plIdx].username] = {
+      url: project.project_leads[plIdx].url,
       access_level: 40,
     };
   }
