@@ -150,6 +150,14 @@ docker run -i --rm -v <fullpath to current project folder>/secrets:/run/secrets 
 
 _[^ Back to top](#eclipsefdn-github-sync)_  
 
+## Creating a tagged release
+
+Once a release candidate has been identified for production, tests should be run locally using the master branch to ensure that the integration of patches are stable as the pull requests that had been validated. Additionally, `npm ci && npm run test` should be run to ensure that the current package lock file is stable, passes tests, and contains no live vulnerabilities from upstream packages. If there is issues with this, patches should be created to address these issues before the release goes live.
+
+When determining the version bump [semantic versioning spec](https://semver.org/) should be used, which also forms the base of how [NPM versioning works](https://docs.npmjs.com/about-semantic-versioning). The new version should be applied through a PR on the master branch. Once this is done a new tag can be created on the master branch with the format `v#.#.#`, where the numbers should match the version stated in the package.json file. While there is no anticipated need to create an NPM package release, it is good practice and can help keep code clean. 
+
+Once the master branch tag is created it can then be merged into the `production` branch. Pushing code to this branch triggers a build to update the running containers that manage this script. The golive process should be coordinated with the Releng team to ensure that support and additional eyes are available to help validate the changes. If there are issues regarding the new version, the script should be rolled back to the previous version to avoid service interruptions via pushes to the `production` branch.
+
 ## Maintainers
 
 **Martin Lowe (Eclipse Foundation)**
