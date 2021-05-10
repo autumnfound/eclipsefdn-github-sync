@@ -39,7 +39,7 @@ spec:
               readOnly: true
               # workaround https://github.com/kubernetes/kubernetes/issues/65835
               subPath: access-token
-            - name: import-sync-secrets
+            - name: import-backup-secrets
               mountPath: "/run/secrets/github-access-token"
               readOnly: true
               # workaround https://github.com/kubernetes/kubernetes/issues/65835

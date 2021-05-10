@@ -1,0 +1,32 @@
+####
+# This Dockerfile is used in order to build a container that the sync script locally in a mode as close to production as possible.
+#
+# Build the image with:
+#
+# docker build -f ./Dockerfile.import -t eclipsefdn/import-backup .
+#
+# Then run the container using:
+#
+# docker run -i --rm -v <full path to a file folder>:/run/secrets eclipsefdn/import-backup
+#
+###
+FROM node:12
+WORKDIR /app
+ARG VERBOSE_VAL=false
+ENV VERBOSE_VAL ${VERBOSE_VAL:-false}
+ARG DRYRUN=false
+ENV DRYRUN ${DRYRUN:-false}
+ARG TARGET=openhw-group/github-backup
+ENV TARGET ${TARGET:-openhw-group/github-backup}
+ARG ORGANIZATION=openhwgroup
+ENV ORGANIZATION ${ORGANIZATION:-openhwgroup}
+ARG HOST=https://gitlab-test.eclipse.org
+ENV HOST ${HOST:-https://gitlab-test.eclipse.org}
+
+## Copy over required script files
+COPY src src/
+
+## Copy NPM configs and install dependencies
+COPY package*.json ./
+RUN npm ci
+
