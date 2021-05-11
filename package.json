@@ -1,8 +1,7 @@
 {
   "name": "eclipsefdn-github-sync",
-  "version": "0.0.2",
-  "description": "Running the toolset",
-  "main": "index.js",
+  "version": "1.0.0-BETA",
+  "description": "Package containing different tools and container configurations for syncing internal PMI data to version control systems (Github, Gitlab, Gerrit).",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eclipsefdn/eclipsefdn-github-sync.git"
@@ -25,23 +24,23 @@
     "@octokit/plugin-throttling": "^3.3.0",
     "@octokit/rest": "^18.0.3",
     "axios": "^0.21.1",
-    "chai": "^4.2.0",
-    "faker": "^5.5.3",
     "flat-cache": "^2.0.1",
     "gitlab": "^14.2.2",
-    "mocha": "^7.0.1",
     "nodemailer": "^6.5.0",
     "openid-client": "^3.15.6",
     "parse-link-header": "^1.0.1",
     "simple-oauth2": "^4.1.0",
-    "sinon": "^10.0.0",
     "uuid": "^3.4.0",
     "winston": "3.2.1",
     "yargs": "^13.3.0"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
+    "chai": "^4.2.0",
     "eslint": "^7.5.0",
-    "eslint-config-strongloop": "^2.1.0"
+    "eslint-config-strongloop": "^2.1.0",
+    "faker": "^5.5.3",
+    "mocha": "^7.0.1",
+    "sinon": "^10.0.0"
   }
 }

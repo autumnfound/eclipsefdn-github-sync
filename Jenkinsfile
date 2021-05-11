@@ -27,6 +27,9 @@ pipeline {
     GL_IMAGE_NAME = 'eclipsefdn/eclipsefdn-gitlab-sync'
     GL_CRONJOB_NAME = 'eclipsefdn-gitlab-sync'
     GL_CONTAINER_NAME = 'eclipsefdn-gitlab-sync'
+    BUI_IMAGE_NAME = 'eclipsefdn/eclipsefdn-backup-import'
+    BUI_CRONJOB_NAME = 'eclipsefdn-backup-import'
+    BUI_CONTAINER_NAME = 'eclipsefdn-backup-import'
     TAG_NAME = sh(
       script: """
         GIT_COMMIT_SHORT=\$(git rev-parse --short ${env.GIT_COMMIT})
@@ -54,6 +57,7 @@ pipeline {
         sh '''
           docker build --pull -t ${IMAGE_NAME}:${TAG_NAME} -t ${IMAGE_NAME}:latest .
           docker build --pull -t ${GL_IMAGE_NAME}:${TAG_NAME} -t ${GL_IMAGE_NAME}:latest -f Dockerfile.gitlab .
+          docker build --pull -t ${BUI_IMAGE_NAME}:${TAG_NAME} -t ${BUI_IMAGE_NAME}:latest -f Dockerfile.import .
         '''
       }
     }
@@ -72,6 +76,8 @@ pipeline {
             docker push ${IMAGE_NAME}:latest
             docker push ${GL_IMAGE_NAME}:${TAG_NAME}
             docker push ${GL_IMAGE_NAME}:latest
+            docker push ${BUI_IMAGE_NAME}:${TAG_NAME}
+            docker push ${BUI_IMAGE_NAME}:latest
           '''
         }
       }
@@ -99,6 +105,14 @@ pipeline {
                 exit 1
               else 
                 kubectl set image "cronjob.v1beta1.batch/${GL_CRONJOB_NAME}" -n "${NAMESPACE}" "${GL_CONTAINER_NAME}=${GL_IMAGE_NAME}:${TAG_NAME}" --record=true
+              fi
+              
+              BUI_CRONJOB="$(kubectl get cronjob ${BUI_CRONJOB_NAME} -n "${NAMESPACE}" -o json)"
+              if [[ $(echo "${BUI_CRONJOB}" | jq -r 'length') -eq 0 ]]; then
+                echo "ERROR: Unable to find a cronjob to patch matching name '${BUI_CRONJOB_NAME}' in namespace ${NAMESPACE}"
+                exit 1
+              else 
+                kubectl set image "cronjob.v1beta1.batch/${BUI_CRONJOB_NAME}" -n "${NAMESPACE}" "${BUI_CONTAINER_NAME}=${BUI_IMAGE_NAME}:${TAG_NAME}" --record=true
               fi
             '''
           }
