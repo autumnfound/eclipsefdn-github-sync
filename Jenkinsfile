@@ -27,9 +27,9 @@ pipeline {
     GL_IMAGE_NAME = 'eclipsefdn/eclipsefdn-gitlab-sync'
     GL_CRONJOB_NAME = 'eclipsefdn-gitlab-sync'
     GL_CONTAINER_NAME = 'eclipsefdn-gitlab-sync'
-    BUI_IMAGE_NAME = 'eclipsefdn/eclipsefdn-backup-import'
-    BUI_CRONJOB_NAME = 'eclipsefdn-backup-import'
-    BUI_CONTAINER_NAME = 'eclipsefdn-backup-import'
+    BUI_IMAGE_NAME = 'eclipsefdn/eclipsefdn-import-backup'
+    BUI_CRONJOB_NAME = 'eclipsefdn-import-backup'
+    BUI_CONTAINER_NAME = 'eclipsefdn-import-backup'
     TAG_NAME = sh(
       script: """
         GIT_COMMIT_SHORT=\$(git rev-parse --short ${env.GIT_COMMIT})
