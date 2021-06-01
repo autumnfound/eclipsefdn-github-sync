@@ -48,7 +48,7 @@ class ImportRunner {
     source: '',
     email: '',
     host: '',
-    count: 3,
+    count: 1,
     flags: {
       noDelete: false,
       sendMail: true,

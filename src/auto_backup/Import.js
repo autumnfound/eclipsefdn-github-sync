@@ -88,6 +88,7 @@ async function run(t1, t2) {
 
   // run the import process
   await imp.runBackup({
+    count: 1,
     target: argv.t,
     source: argv.o,
     email: argv.e,
