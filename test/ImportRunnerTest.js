@@ -100,7 +100,7 @@ describe('ImportRunner', function () {
         let mock = sinon.mock(glMock.Groups);
         mock.expects('subgroups').once().withArgs(id);
 
-        await runner.getBackupGroups({ id: id });
+        await runner.getBackupGroups(id);
         // verify it was called once
         mock.verify();
       });
@@ -124,7 +124,7 @@ describe('ImportRunner', function () {
         mock.expects('subgroups').once().withArgs(id).returns(sampleData);
 
         // should return the data in exact format
-        expect(await runner.getBackupGroups({ id: id })).to.eq(sampleData);
+        expect(await runner.getBackupGroups(id)).to.eq(sampleData);
         // verify it was called once
         mock.verify();
       });
@@ -137,7 +137,7 @@ describe('ImportRunner', function () {
         mock.expects('subgroups').once().withArgs(id).throws();
 
         // should return an empty response on failure
-        expect(await runner.getBackupGroups({ id: id })).to.be.undefined.and.not
+        expect(await runner.getBackupGroups(id)).to.be.undefined.and.not
           .throw;
         // verify it was called once
         mock.verify();
