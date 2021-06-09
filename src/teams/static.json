@@ -170,6 +170,11 @@
 				"name": "croundy",
 				"url": "https://api.eclipse.org/account/profile/croundy",
 				"expiration": ""
+			},
+			{
+				"name": "hailleyseed",
+				"url": "https://api.eclipse.org/account/profile/hailleyseed",
+				"expiration": ""
 			}
 		],
 		"permission": "TRIAGE",
