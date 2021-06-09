@@ -48,7 +48,7 @@ class ImportRunner {
     source: '',
     email: '',
     host: '',
-    count: 3,
+    count: 1,
     flags: {
       noDelete: false,
       sendMail: true,
@@ -83,7 +83,7 @@ class ImportRunner {
           .push(`Successfully imported repository '${repo.name}' to ${response.data.full_name}(${response.data.id})`))
         .catch(error => errors.push(`Error importing repository '${repo.name}': ${error}`))));
     // remove old groups while imports are processing
-    await this.pruneBackupGroups(g, config);
+    await this.pruneBackupGroups(config);
 
     // await the finish of the imports in case they haven't returned
     await Promise.allSettled(imports).then(() => this.report(successes, errors, config));
@@ -146,9 +146,9 @@ class ImportRunner {
    *
    * @param {*} g the parent group to search for backup groups
    */
-  async getBackupGroups(g) {
+  async getBackupGroups(gid) {
     try {
-      return await this.gitlab.Groups.subgroups(g.id);
+      return await this.gitlab.Groups.subgroups(gid);
     } catch (e) {
       console.error(e);
     }
@@ -200,17 +200,17 @@ class ImportRunner {
    * Performs the pruning operation, using the configs for the current run and the parent group retrieved earlier in the run. If
    * noDelete flag is set the process still runs, but reports to console that deletion was skipped for logging purposes.
    *
-   * @param {*} parent the parent group for the backup groups
    * @param {*} config configuration object for the current run.
    */
-  async pruneBackupGroups(parent, config) {
-    let groups = await this.getBackupGroups(parent);
+  async pruneBackupGroups(config) {
+    let groups = await this.getBackupGroups(config.target);
     // return if there are no groups to process
     if (groups === undefined || groups === null) {
       return false;
     }
+    console.log(`Found ${groups.length} groups (with a keep count of ${config.count})`);
     // only process groups with the pattern of backup-\d+ so that we can have static backups if necessary
-    groups.filter(a => a.name.match(/^backup-\d+$/)).sort((a, b) => (b.name).localeCompare(a.name));
+    groups = groups.filter(a => a.name.match(/^backup-\d+$/)).sort((a, b) => (a.name).localeCompare(b.name)).reverse();
     let count = 0;
     for (let gIdx in groups) {
       count++;

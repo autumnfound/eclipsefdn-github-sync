@@ -90,6 +90,7 @@ async function run(t1, t2) {
   await imp.runBackup({
     target: argv.t,
     source: argv.o,
+    count: 1,
     email: argv.e,
     host: argv.H,
     flags: {
